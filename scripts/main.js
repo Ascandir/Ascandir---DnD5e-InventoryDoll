@@ -64,7 +64,7 @@ const DEFAULT_LAYOUT = {
   ],
   fixed: {
     ac: { x: 50, y: 92 }, main: { x: 14, y: 86 }, off: { x: 86, y: 86 }
-  ]
+  }
 };
 
 /** Position eines Slots in % (frei gesetzt oder über einen Ankerpunkt). */
