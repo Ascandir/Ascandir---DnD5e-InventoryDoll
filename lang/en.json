@@ -189,7 +189,10 @@
       "Unmark": "No longer a purse",
       "MigrateIn": "Purses are now active. Move every character's coins into a purse? Characters without a purse get one.",
       "MigrateOut": "Purses are now off. Move all coins from purses back into the characters' normal currency?",
-      "Migrated": "Coins have been moved."
+      "Migrated": "Coins have been moved.",
+      "Denoms": "Available coins",
+      "ConvertAsk": "Some coin types were turned off. Convert those coins in all purses into the remaining types (e.g. 10 electrum → 5 gold)?",
+      "Converted": "Coins have been converted."
     },
     "Attune": {
       "On": "Attuned",

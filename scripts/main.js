@@ -568,6 +568,55 @@ const purseCap = purse => Math.max(0, Number(purse.getFlag(ID, "capacity")) || s
 const coinCount = cur => DENOMS().reduce((sum, d) => sum + (Number(cur?.[d]) || 0), 0);
 const ownCoins = actor => actor._source.system?.currency ?? {};
 
+/** Vom SL erlaubte Münzsorten. */
+function allowedDenoms() {
+  const all = DENOMS();
+  const set = setting("purseDenoms");
+  const allowed = Array.isArray(set) ? all.filter(d => set.includes(d)) : all;
+  return allowed.length ? allowed : all;
+}
+/** Wert einer Münze in Kupfer. */
+const unitValue = d => Math.round(100 / (Number(CONFIG.DND5E.currencies?.[d]?.conversion) || 1));
+
+/** Kupferwert auf erlaubte Sorten verteilen (größte zuerst). */
+function distribute(copper, allowed = allowedDenoms()) {
+  const out = {};
+  let rest = Math.max(0, Math.trunc(copper));
+  for ( const d of [...allowed].sort((a, b) => unitValue(b) - unitValue(a)) ) {
+    const n = Math.floor(rest / unitValue(d));
+    if ( n ) out[d] = n;
+    rest -= n * unitValue(d);
+  }
+  return out;
+}
+
+/** Abgeschaltete Sorten in einer Münz-Menge umrechnen (verändert cur). */
+function convertDisabled(cur) {
+  const allowed = allowedDenoms();
+  let copper = 0;
+  for ( const d of DENOMS() ) {
+    if ( allowed.includes(d) || !Number(cur[d]) ) continue;
+    copper += Number(cur[d]) * unitValue(d);
+    cur[d] = 0;
+  }
+  for ( const [d, n] of Object.entries(distribute(copper, allowed)) ) cur[d] = (Number(cur[d]) || 0) + n;
+  return copper > 0;
+}
+
+/** Alle Charaktere: Münzen abgeschalteter Sorten umrechnen. */
+async function convertDisabledAll() {
+  for ( const actor of game.actors.filter(a => a.type === "character") ) {
+    const updates = [];
+    for ( const p of actor.itemTypes.container.filter(isPurse) ) {
+      const cur = foundry.utils.deepClone(p.system.currency ?? {});
+      if ( convertDisabled(cur) ) updates.push({ _id: p.id, "system.currency": cur });
+    }
+    if ( updates.length ) await actor.updateEmbeddedDocuments("Item", updates, { aid: true });
+    const own = foundry.utils.deepClone(ownCoins(actor));
+    if ( convertDisabled(own) ) await actor.update({ "system.currency": own }, { aidPurse: true });
+  }
+}
+
 /**
  * Im Geldbörsen-Modus zeigt actor.system.currency die Summe aus losen Münzen und allen Geldbörsen.
  * So sehen andere Module (Shops, Belohnungen) das ganze Geld.
@@ -587,6 +636,17 @@ function applyPurseTotals(actor) {
  * (Rest bleibt als lose Münzen am Charakter), negative nehmen zuerst lose Münzen, dann aus den Geldbörsen.
  */
 async function applyCoinDelta(actor, delta) {
+  delta = { ...delta };
+  const allowed = allowedDenoms();
+  for ( const d of Object.keys(delta) ) {
+    if ( allowed.includes(d) ) continue;
+    const amount = Number(delta[d]) || 0;
+    delete delta[d];
+    const sign = Math.sign(amount);
+    for ( const [to, n] of Object.entries(distribute(Math.abs(amount) * unitValue(d), allowed)) ) {
+      delta[to] = (Number(delta[to]) || 0) + (sign * n);
+    }
+  }
   const purses = pursesOf(actor);
   const own = foundry.utils.deepClone(ownCoins(actor));
   const pc = new Map(purses.map(p => [p.id, foundry.utils.deepClone(p.system.currency ?? {})]));
@@ -694,7 +754,7 @@ function renderPurses(app, actor) {
     const capField = game.user.isGM
       ? `<label class="aid-purse-cap" data-tooltip="${esc(L("Purse.Capacity"))}"><span>${count} /</span><input type="number" min="0" step="10" value="${cap}" data-aid-purse-cap="${p.id}" aria-label="${esc(L("Purse.Capacity"))}"></label>`
       : `<span class="aid-captext">${count} / ${cap}</span>`;
-    const coins = DENOMS().map(d => {
+    const coins = allowedDenoms().map(d => {
       const label = game.i18n.localize(CONFIG.DND5E.currencies[d]?.label ?? d);
       const v = Number(p.system.currency?.[d]) || 0;
       return `<label class="aid-coin-field" data-tooltip="${esc(label)}">${coinIcon(d)}
@@ -707,7 +767,7 @@ function renderPurses(app, actor) {
           <i class="fa-solid fa-sack-dollar" inert></i><h3>${esc(p.name)}</h3><span class="aid-spacer"></span>
           <span class="aid-meter ${pct >= 100 ? "full" : ""}"><span style="width:${pct}%"></span></span>${capField}${unmark}
         </div>
-        <div class="aid-coins">${coins}</div>
+        <div class="aid-coins" style="grid-template-columns: repeat(${allowedDenoms().length}, minmax(0, 1fr))">${coins}</div>
       </div>`;
   });
   const own = ownCoins(actor);
@@ -1466,6 +1526,9 @@ class LayoutEditor extends ApplicationV2 {
           <fieldset><legend>${esc(L("Purse.Title"))}</legend>
             <label class="aid-ed-field inline"><span>${esc(L("Settings.Purse.Name"))}</span><input type="checkbox" data-purse-on ${setting("purseEnabled") ? "checked" : ""}></label>
             <label class="aid-ed-field inline"><span>${esc(L("Settings.PurseCap.Name"))}</span><input type="number" min="10" max="10000" step="10" data-purse-cap value="${setting("purseCapacity")}"></label>
+            <div class="aid-ed-field"><span>${esc(L("Purse.Denoms"))}</span>
+              <div class="aid-ed-denoms">${DENOMS().map(d => `<label>${coinIcon(d)}<input type="checkbox" data-denom="${d}" ${allowedDenoms().includes(d) ? "checked" : ""}> ${esc(game.i18n.localize(CONFIG.DND5E.currencies[d]?.label ?? d))}</label>`).join("")}</div>
+            </div>
           </fieldset>
           <p class="aid-ed-hint">${esc(L("Editor.Hint"))}</p>
           <button type="button" data-settings><i class="fa-solid fa-sliders" inert></i> ${esc(L("Editor.AllSettings"))}</button>
@@ -1625,6 +1688,22 @@ class LayoutEditor extends ApplicationV2 {
       await game.settings.set(ID, "layout", this.layout);
       const cap = Math.clamp(Number(content.querySelector("[data-purse-cap]")?.value) || 300, 10, 10000);
       if ( cap !== setting("purseCapacity") ) await game.settings.set(ID, "purseCapacity", cap);
+      const denoms = [...content.querySelectorAll("[data-denom]")].filter(i => i.checked).map(i => i.dataset.denom);
+      if ( denoms.length ) {
+        const before = allowedDenoms();
+        await game.settings.set(ID, "purseDenoms", denoms);
+        const removed = before.filter(d => !denoms.includes(d));
+        if ( removed.length ) {
+          const ok = await foundry.applications.api.DialogV2.confirm({
+            window: { title: L("Purse.Title") },
+            content: `<p>${esc(L("Purse.ConvertAsk"))}</p>`
+          }).catch(() => false);
+          if ( ok ) {
+            await convertDisabledAll();
+            ui.notifications.info(L("Purse.Converted"));
+          }
+        }
+      }
       const on = !!content.querySelector("[data-purse-on]")?.checked;
       if ( on !== setting("purseEnabled") ) await game.settings.set(ID, "purseEnabled", on);
       ui.notifications.info(L("Editor.Saved"));
@@ -1737,6 +1816,7 @@ Hooks.once("init", () => {
   });
   reg("hideWornInList", { name: "AID.Settings.HideWorn.Name", hint: "AID.Settings.HideWorn.Hint", type: Boolean, default: true, onChange: rerenderSheets });
   reg("purseEnabled", { name: "AID.Settings.Purse.Name", hint: "AID.Settings.Purse.Hint", type: Boolean, default: false, onChange: onPurseToggle });
+  game.settings.register(ID, "purseDenoms", { scope: "world", config: false, type: Array, default: null, onChange: rerenderSheets });
   reg("purseCapacity", { name: "AID.Settings.PurseCap.Name", hint: "AID.Settings.PurseCap.Hint", type: Number, default: 300, range: { min: 10, max: 10000, step: 10 }, onChange: rerenderSheets });
   reg("allowGround", { name: "AID.Settings.Ground.Name", hint: "AID.Settings.Ground.Hint", type: Boolean, default: true, onChange: rerenderSheets });
 });

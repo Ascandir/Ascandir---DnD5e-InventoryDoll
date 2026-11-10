@@ -189,7 +189,10 @@
       "Unmark": "Keine Geldbörse mehr",
       "MigrateIn": "Geldbörsen sind jetzt aktiv. Sollen die Münzen aller Charaktere in eine Geldbörse wandern? Charaktere ohne Geldbörse bekommen eine.",
       "MigrateOut": "Geldbörsen sind jetzt aus. Sollen alle Münzen aus den Geldbörsen zurück in die normale Währung der Charaktere?",
-      "Migrated": "Münzen wurden umgelagert."
+      "Migrated": "Münzen wurden umgelagert.",
+      "Denoms": "Verfügbare Münzen",
+      "ConvertAsk": "Einige Münzsorten wurden abgeschaltet. Sollen diese Münzen in allen Geldbörsen in die übrigen Sorten umgerechnet werden (z. B. 10 Elektrum → 5 Gold)?",
+      "Converted": "Münzen wurden umgerechnet."
     },
     "Attune": {
       "On": "Eingestimmt",

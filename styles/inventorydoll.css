@@ -604,3 +604,6 @@
 .aid-swatches { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-size: 12px; }
 .aid-swatches > span { margin-right: 4px; opacity: .8; }
 .aid-swatch { width: 22px; height: 22px; min-height: 0; padding: 0; border-radius: 50%; border: 1px solid rgba(127,127,127,.7); }
+.aid-ed-denoms { display: flex; flex-wrap: wrap; gap: 6px 12px; }
+.aid-ed-denoms label { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; }
+.aid-ed-denoms .aid-coin { width: 16px; height: 16px; border: none; }

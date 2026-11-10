@@ -44,6 +44,7 @@ Der SL schaltet in den Moduleinstellungen (oder im Slot-Editor) **Geldbörsen ve
 - Die normale Währung des Bogens verschwindet. Stattdessen zeigt das Inventar oben jede Geldbörse mit ihren Münzen und dem Füllstand.
 - Eine Geldbörse ist ein Behälter. Der SL legt sie per Knopf an oder markiert einen beliebigen Behälter mit dem Münz-Symbol als Geldbörse. Die Kapazität kann er pro Geldbörse direkt im Bogen ändern.
 - Geld, das von außen dazukommt oder abgeht (Belohnungen, Shops, andere Module), wird automatisch in die Geldbörsen gebucht. Passt nichts mehr hinein, trägt der Charakter die Münzen lose – das Inventar zeigt das als Warnung mit Knopf „In Geldbörse packen“.
+- Der SL legt im Slot-Editor fest, welche Münzsorten es gibt (z. B. ohne Elektrum). Münzen abgeschalteter Sorten werden in die übrigen umgerechnet – auch wenn sie von außen dazukommen.
 - Beim Ein- bzw. Ausschalten fragt das Modul, ob die Münzen aller Charaktere in die Geldbörsen bzw. zurück in die normale Währung wandern sollen.
 
 ## Für den SL
