@@ -612,3 +612,16 @@
 .aid-search-hidden { display: none !important; }
 .aid-container.aid-searching.collapsed .aid-container-body { display: block; }
 .aid-container.aid-searching .aid-empty { display: none; }
+
+/* ---------- v0.2.16: Paperdoll mit Maximalgröße ---------- */
+.dnd5e2.sheet.actor.character .tab.aid-tab.active {
+  grid-template-columns: minmax(300px, min(46%, 440px)) minmax(0, 1fr);
+}
+.aid-figure {
+  width: min(calc(100% - 16px), calc(78vh * 2 / 3));
+  margin: 8px auto;
+}
+@container aid-tabs (max-width: 680px) {
+  .dnd5e2.sheet.actor.character .tab.aid-tab.active { grid-template-columns: minmax(0, 1fr); }
+  .dnd5e2.sheet.actor.character .tab.aid-tab > .aid-doll { max-width: 440px; width: 100%; justify-self: center; }
+}
