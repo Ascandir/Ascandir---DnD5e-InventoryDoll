@@ -109,7 +109,11 @@
       "Save": "Save layout",
       "Saved": "Paperdoll layout saved.",
       "AllSettings": "All module settings",
-      "MoveHint": "Drag to move"
+      "MoveHint": "Drag to move",
+      "Icon": "Icon of the empty slot",
+      "IconClass": "Font Awesome icon (e.g. fa-crown)",
+      "IconImage": "Use your own image",
+      "IconReset": "Default icon of the slot type"
     },
     "Settings": {
       "Editor": {

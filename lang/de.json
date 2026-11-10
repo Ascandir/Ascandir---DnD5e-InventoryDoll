@@ -109,7 +109,11 @@
       "Save": "Layout speichern",
       "Saved": "Paperdoll-Layout gespeichert.",
       "AllSettings": "Alle Moduleinstellungen",
-      "MoveHint": "Zum Verschieben ziehen"
+      "MoveHint": "Zum Verschieben ziehen",
+      "Icon": "Symbol im leeren Feld",
+      "IconClass": "Font-Awesome-Symbol (z. B. fa-crown)",
+      "IconImage": "Eigenes Bild verwenden",
+      "IconReset": "Standard-Symbol des Slot-Typs"
     },
     "Settings": {
       "Editor": {

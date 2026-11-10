@@ -51,7 +51,21 @@ const SLOT_ICONS = {
   clothing: "fa-shirt", wrists: "fa-hand-back-fist", hands: "fa-mitten", waist: "fa-grip-lines", feet: "fa-shoe-prints",
   ring: "fa-ring", trinket: "fa-gem", focus: "fa-wand-magic-sparkles", any: "fa-star"
 };
-const slotIcon = (type, cls = "") => `<i class="fa-solid ${SLOT_ICONS[type] ?? "fa-circle"} aid-slot-icon ${cls}" inert></i>`;
+/** Auswahl im Editor. */
+const ICON_CHOICES = [
+  "fa-hat-wizard", "fa-crown", "fa-helmet-un", "fa-glasses", "fa-eye", "fa-medal", "fa-gem", "fa-ring", "fa-vest",
+  "fa-vest-patches", "fa-shirt", "fa-user-shield", "fa-shield-halved", "fa-mitten", "fa-hand", "fa-hand-back-fist",
+  "fa-grip-lines", "fa-shoe-prints", "fa-socks", "fa-wand-magic-sparkles", "fa-wand-sparkles", "fa-book",
+  "fa-scroll", "fa-feather", "fa-star", "fa-moon", "fa-sun", "fa-skull", "fa-heart", "fa-bolt", "fa-fire", "fa-leaf"
+];
+const cleanIcon = v => String(v ?? "").toLowerCase().split(/\s+/).filter(c => /^fa-[a-z0-9-]+$/.test(c) && !["fa-solid", "fa-regular", "fa-brands"].includes(c))[0] ?? "";
+
+/** Symbol eines Feldes: eigenes Bild, eigenes Font-Awesome-Symbol oder Standard des Typs. */
+function slotIcon(slot) {
+  if ( slot.iconImg ) return `<img class="aid-slot-icon aid-slot-img" src="${esc(slot.iconImg)}" alt="" draggable="false">`;
+  const icon = cleanIcon(slot.icon) || SLOT_ICONS[slot.type] || "fa-circle";
+  return `<i class="fa-solid ${icon} aid-slot-icon" inert></i>`;
+}
 
 const DEFAULT_LAYOUT = {
   v: LAYOUT_VERSION,
@@ -841,7 +855,7 @@ function renderSlot(actor, slot, d, editable) {
   const label = slotLabel(slot);
   return `<div class="aid-slot ${item ? "filled" : "empty"}" style="left:${a.x}%;top:${a.y}%"
       data-aid-drop="slot" data-slot="${esc(slot.id)}" ${item ? `data-aid-item="${item.id}" ${tipAttrs(item, slot.x > 50 ? "LEFT" : "RIGHT")}` : `data-tooltip="${esc(label)}"`}>
-      <div class="aid-tile" ${item && editable ? "draggable=\"true\"" : ""}>${item ? img(item.img, item.name) + attuneBadge(item) : slotIcon(slot.type)}</div>
+      <div class="aid-tile" ${item && editable ? "draggable=\"true\"" : ""}>${item ? img(item.img, item.name) + attuneBadge(item) : slotIcon(slot)}</div>
     </div>`;
 }
 
@@ -1395,7 +1409,7 @@ class LayoutEditor extends ApplicationV2 {
     const lay = this.layout;
     const slots = lay.slots.map(slot => `<button type="button" class="aid-ed-slot ${slot.id === this.selected ? "selected" : ""}"
         style="left:${slot.x}%;top:${slot.y}%" data-select="${esc(slot.id)}">
-        <span class="aid-ed-tile">${esc(slotLabel(slot))}</span><span class="aid-ed-type">${esc(slotTypeLabel(slot.type))}</span></button>`).join("");
+        <span class="aid-ed-tile">${slotIcon(slot)}<span>${esc(slotLabel(slot))}</span></span><span class="aid-ed-type">${esc(slotTypeLabel(slot.type))}</span></button>`).join("");
     // Vorgeschlagene freie Stellen bekommen ein „+“; zusätzlich kann überall in die Fläche geklickt werden.
     const free = Object.values(ANCHORS).filter(a => !lay.slots.some(sl => Math.hypot(sl.x - a.x, (sl.y - a.y) * 1.25) < 9));
     const adds = free.map(a => `<button type="button" class="aid-ed-add" style="left:${a.x}%;top:${a.y}%" data-add-x="${a.x}" data-add-y="${a.y}"
@@ -1407,6 +1421,17 @@ class LayoutEditor extends ApplicationV2 {
         <label class="aid-ed-field"><span>${esc(L("Editor.SlotType"))}</span><select data-field="type">${typeOpts}</select></label>
         <label class="aid-ed-field"><span>${esc(L("Editor.Label"))}</span><input type="text" data-field="label" value="${esc(sel.label)}" placeholder="${esc(slotTypeLabel(sel.type))}"></label>
         <p class="aid-ed-hint">${esc(L(`TypeHint.${sel.type}`))}</p>
+        <div class="aid-ed-field"><span>${esc(L("Editor.Icon"))}</span>
+          <div class="aid-ed-icons">${ICON_CHOICES.map(ic => {
+    const current = !sel.iconImg && ((cleanIcon(sel.icon) || SLOT_ICONS[sel.type]) === ic);
+    return `<button type="button" data-icon="${ic}" class="${current ? "selected" : ""}" aria-label="${ic}"><i class="fa-solid ${ic}" inert></i></button>`;
+  }).join("")}</div>
+          <div class="aid-ed-iconrow">
+            <input type="text" data-field="icon" value="${esc(sel.iconImg ? "" : cleanIcon(sel.icon))}" placeholder="${esc(SLOT_ICONS[sel.type] ?? "fa-star")}" aria-label="${esc(L("Editor.IconClass"))}" data-tooltip="${esc(L("Editor.IconClass"))}">
+            <button type="button" data-icon-img data-tooltip="${esc(L("Editor.IconImage"))}" aria-label="${esc(L("Editor.IconImage"))}"><i class="fa-solid fa-image" inert></i></button>
+            <button type="button" data-icon-reset data-tooltip="${esc(L("Editor.IconReset"))}" aria-label="${esc(L("Editor.IconReset"))}"><i class="fa-solid fa-rotate-left" inert></i></button>
+          </div>
+        </div>
         <button type="button" class="aid-ed-remove" data-remove><i class="fa-solid fa-trash" inert></i> ${esc(L("Editor.Remove"))}</button>`
       : `<p class="aid-ed-hint">${esc(L("Editor.NoSelection"))}</p>`;
     return `<div class="aid-ed">
@@ -1532,6 +1557,36 @@ class LayoutEditor extends ApplicationV2 {
     });
     content.querySelector("[data-field=containerSlots]")?.addEventListener("change", ev => {
       this.layout.containerSlots = Math.clamp(Number(ev.currentTarget.value) || 4, 1, 8);
+    });
+    content.querySelectorAll("[data-icon]").forEach(b => b.addEventListener("click", () => {
+      const sl = sel();
+      if ( !sl ) return;
+      sl.icon = b.dataset.icon;
+      delete sl.iconImg;
+      this.render();
+    }));
+    content.querySelector("[data-field=icon]")?.addEventListener("change", ev => {
+      const sl = sel();
+      if ( !sl ) return;
+      sl.icon = cleanIcon(ev.currentTarget.value);
+      delete sl.iconImg;
+      this.render();
+    });
+    content.querySelector("[data-icon-img]")?.addEventListener("click", () => {
+      const sl = sel();
+      if ( !sl ) return;
+      const FP = foundry.applications.apps?.FilePicker?.implementation ?? globalThis.FilePicker;
+      new FP({ type: "image", current: sl.iconImg || "", callback: path => {
+        sl.iconImg = path;
+        this.render();
+      } }).render(true);
+    });
+    content.querySelector("[data-icon-reset]")?.addEventListener("click", () => {
+      const sl = sel();
+      if ( !sl ) return;
+      delete sl.icon;
+      delete sl.iconImg;
+      this.render();
     });
     content.querySelector("[data-remove]")?.addEventListener("click", () => {
       this.layout.slots = this.layout.slots.filter(s => s.id !== this.selected);
