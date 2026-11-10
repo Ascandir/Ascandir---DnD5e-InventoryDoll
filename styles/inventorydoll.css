@@ -496,3 +496,9 @@
 .aid-cbar .aid-ammo { width: 96px; height: 20px; font-size: 10px; }
 .aid-cbar .aid-over .aid-cbody, .aid-cbar .aid-over .aid-cplace { box-shadow: 0 0 8px var(--dnd5e-color-gold); opacity: 1; }
 .aid-cbar .aid-cslot.aid-over { box-shadow: none; }
+
+/* ---------- v0.2.7: Behälterzeilen ohne Einrückung ---------- */
+.aid-colheads { padding: 2px 8px 2px 10px; }
+.aid-list .aid-row .item-row { padding: 0 8px 0 10px; gap: 4px; }
+.aid-list .aid-row .item-name { gap: 10px; }
+.aid-empty { padding: 8px 10px; }
