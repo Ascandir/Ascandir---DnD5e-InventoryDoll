@@ -160,6 +160,13 @@
       "Attune": {
         "Name": "Beim Anlegen einstimmen",
         "Hint": "Wer einen Gegenstand mit Einstimmungspflicht anlegt, stimmt sich ein, solange ein Platz frei ist; wird er von der Paperdoll genommen, endet die Einstimmung. Waffenset-Wechsel ändern die Einstimmung nicht."
+      },
+      "Highlight": {
+        "Name": "Leere Felder hervorheben",
+        "Hint": "Hält die Symbole leerer Felder auch auf hellen oder bunten Porträts erkennbar.",
+        "Outline": "Helles Symbol mit dunkler Kontur",
+        "Glass": "Milchglas hinter dem Feld",
+        "None": "Keine (nur transparent)"
       }
     },
     "Purse": {

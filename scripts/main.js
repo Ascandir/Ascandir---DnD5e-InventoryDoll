@@ -932,7 +932,7 @@ function renderDoll(app, actor) {
     ? `<button type="button" class="aid-auto" data-aid-auto data-tooltip="${esc(L("Doll.AutoFillHint"))}" aria-label="${esc(L("Doll.AutoFill"))}"><i class="fa-solid fa-wand-magic-sparkles" inert></i></button>` : "";
   const gear = (game.user.isGM && app.isEditMode)
     ? `<button type="button" class="aid-auto" data-aid-config data-tooltip="${esc(L("Doll.Config"))}" aria-label="${esc(L("Doll.Config"))}"><i class="fa-solid fa-gear" inert></i></button>` : "";
-  return `<aside class="aid-doll ${editable ? "editable" : "locked"}">
+  return `<aside class="aid-doll ${editable ? "editable" : "locked"} aid-hl-${esc(setting("emptyHighlight"))}">
       <section class="aid-card">
         <header class="aid-header"><h3>${esc(L("Doll.Title"))}</h3>${auto}${gear}</header>
         <div class="aid-figure">
@@ -1641,6 +1641,11 @@ Hooks.once("init", () => {
   reg("strictSlots", { name: "AID.Settings.Strict.Name", hint: "AID.Settings.Strict.Hint", type: Boolean, default: true });
   reg("autoEquip", { name: "AID.Settings.AutoEquip.Name", hint: "AID.Settings.AutoEquip.Hint", type: Boolean, default: true });
   reg("autoAttune", { name: "AID.Settings.Attune.Name", hint: "AID.Settings.Attune.Hint", type: Boolean, default: true });
+  reg("emptyHighlight", {
+    name: "AID.Settings.Highlight.Name", hint: "AID.Settings.Highlight.Hint", type: String, default: "outline",
+    choices: { outline: "AID.Settings.Highlight.Outline", glass: "AID.Settings.Highlight.Glass", none: "AID.Settings.Highlight.None" },
+    onChange: rerenderSheets
+  });
   reg("hideWornInList", { name: "AID.Settings.HideWorn.Name", hint: "AID.Settings.HideWorn.Hint", type: Boolean, default: true, onChange: rerenderSheets });
   reg("purseEnabled", { name: "AID.Settings.Purse.Name", hint: "AID.Settings.Purse.Hint", type: Boolean, default: false, onChange: onPurseToggle });
   reg("purseCapacity", { name: "AID.Settings.PurseCap.Name", hint: "AID.Settings.PurseCap.Hint", type: Number, default: 300, range: { min: 10, max: 10000, step: 10 }, onChange: rerenderSheets });

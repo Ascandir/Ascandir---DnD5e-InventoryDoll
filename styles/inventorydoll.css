@@ -557,3 +557,32 @@
 .aid-ed-iconrow { display: flex; gap: 4px; margin-top: 4px; }
 .aid-ed-iconrow input { flex: 1; }
 .aid-ed-iconrow button { width: 32px; flex: none; min-height: 0; padding: 0; }
+
+/* ---------- v0.2.10: leere Felder auf jedem Porträt erkennbar ---------- */
+/* Kontur: helles Symbol mit dunklem Rand, Rahmen zweifarbig (hell gestrichelt + dunkler Saum) */
+.aid-doll.aid-hl-outline .aid-figure .aid-slot.empty .aid-tile,
+.aid-doll.aid-hl-outline .aid-figure .aid-hand.empty .aid-tile,
+.aid-doll.aid-hl-glass .aid-figure .aid-slot.empty .aid-tile,
+.aid-doll.aid-hl-glass .aid-figure .aid-hand.empty .aid-tile {
+  border: 1px dashed rgba(255, 244, 214, .9);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .55), inset 0 0 0 1px rgba(0, 0, 0, .45);
+}
+.aid-doll.aid-hl-outline .aid-figure .aid-slot-icon,
+.aid-doll.aid-hl-glass .aid-figure .aid-slot-icon {
+  color: #fff4d6;
+  opacity: .9;
+  filter: drop-shadow(0 0 1px #000) drop-shadow(0 0 1px #000) drop-shadow(0 0 3px rgba(0, 0, 0, .8));
+}
+.aid-doll.aid-hl-outline .aid-figure img.aid-slot-img,
+.aid-doll.aid-hl-glass .aid-figure img.aid-slot-img {
+  opacity: .9;
+  filter: drop-shadow(0 0 1px #000) drop-shadow(0 0 3px rgba(0, 0, 0, .8));
+}
+/* Milchglas: Bild hinter dem Feld wird weichgezeichnet und abgedunkelt */
+.aid-doll.aid-hl-glass .aid-figure .aid-slot.empty .aid-tile,
+.aid-doll.aid-hl-glass .aid-figure .aid-hand.empty .aid-tile {
+  -webkit-backdrop-filter: blur(4px) brightness(.65);
+  backdrop-filter: blur(4px) brightness(.65);
+}
+/* Set-Knöpfe und RK ebenfalls mit Kontur */
+.aid-doll:not(.aid-hl-none) .aid-figure .aid-setpill { box-shadow: 0 0 0 1px rgba(0, 0, 0, .55); }

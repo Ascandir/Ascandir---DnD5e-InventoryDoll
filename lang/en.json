@@ -160,6 +160,13 @@
       "Attune": {
         "Name": "Attune on equip",
         "Hint": "Equipping an item that requires attunement attunes it if a slot is free; removing it from the paperdoll ends the attunement. Switching weapon sets does not change attunement."
+      },
+      "Highlight": {
+        "Name": "Highlight empty slots",
+        "Hint": "Keeps the icons of empty slots readable on bright or colourful portraits.",
+        "Outline": "Light icon with dark outline",
+        "Glass": "Frosted glass behind the slot",
+        "None": "None (transparent only)"
       }
     },
     "Purse": {
