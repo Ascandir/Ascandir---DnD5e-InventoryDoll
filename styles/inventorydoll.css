@@ -341,8 +341,8 @@
   width: 96px;
   display: flex; flex-direction: column; align-items: center; gap: 3px;
 }
-.aid-hand.secondary { left: 13%; }
-.aid-hand.primary { left: 87%; }
+.aid-hand.primary { left: 13%; }
+.aid-hand.secondary { left: 87%; }
 .aid-hand .aid-label { color: var(--dnd5e-color-gold); font-weight: bold; }
 .aid-tile.big { width: 68px; height: 68px; }
 .aid-hand.filled .aid-tile { border: 2px solid var(--dnd5e-color-gold); background: var(--dnd5e-gold-icon-background, #222); cursor: grab; }
@@ -407,6 +407,6 @@
   font-size: 10px; opacity: .7; text-align: center; cursor: not-allowed;
 }
 .aid-ed-fixed.hand { top: 64%; width: 64px; height: 64px; }
-.aid-ed-fixed.hand.off { left: 13%; }
-.aid-ed-fixed.hand.main { left: 87%; }
+.aid-ed-fixed.hand.main { left: 13%; }
+.aid-ed-fixed.hand.off { left: 87%; }
 .aid-ed-fixed.sets { left: 50%; top: 64%; width: 150px; height: 30px; }

@@ -836,7 +836,7 @@ function renderHands(actor, editable) {
     const label = L(which === "primary" ? "Sets.Main" : "Sets.Off");
     const real = item && !ghost;
     return `<div class="aid-hand ${which} ${item ? "filled" : "empty"} ${ghost ? "ghost" : ""}" data-aid-drop="weapon" data-set="${data.active}" data-which="${which}"
-        ${real ? `data-aid-item="${item.id}" ${tipAttrs(item, which === "primary" ? "LEFT" : "RIGHT")}` : `data-tooltip="${esc(label)}"`} ${real && editable ? "draggable=\"true\"" : ""}>
+        ${real ? `data-aid-item="${item.id}" ${tipAttrs(item, which === "primary" ? "RIGHT" : "LEFT")}` : `data-tooltip="${esc(label)}"`} ${real && editable ? "draggable=\"true\"" : ""}>
         <span class="aid-label">${esc(label.toUpperCase())}</span>
         <div class="aid-tile big">${item ? img(item.img, item.name) : ""}${ghost ? `<span class="aid-2h">${esc(L("Sets.TwoHandedShort"))}</span>` : ""}${real ? attuneBadge(item) : ""}</div>
         <span class="aid-hname">${item ? esc(item.name) : ""}</span>
@@ -849,7 +849,7 @@ function renderHands(actor, editable) {
     return `<button type="button" class="aid-setpill ${data.active === n ? "active" : ""}" data-aid-set="${n}" data-aid-drop="setpill" data-set="${n}"
         data-tooltip="${esc(`${L("Sets.Title")} ${nums[n]}: ${names}`)}">${nums[n]}</button>`;
   }).join("");
-  return `${hand("secondary", two ? main : off, two)}${hand("primary", main)}
+  return `${hand("primary", main)}${hand("secondary", two ? main : off, two)}
     <div class="aid-setbar"><div class="aid-setpills">${pills}</div><span class="aid-setnote">${esc(L(hudActive() ? "Sets.SyncedHud" : "Sets.Own"))}</span></div>`;
 }
 

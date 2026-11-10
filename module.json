@@ -2,7 +2,7 @@
   "id": "ascandir-dnd5e-inventorydoll",
   "title": "Ascandir - DnD5e InventoryDoll",
   "description": "Ersetzt den Inventar-Reiter des dnd5e-Charakterbogens durch ein Inventar mit Paperdoll: Ausrüstung auf Slots ziehen, drei Waffensets (synchron mit dem Ascandir Combat HUD), Behälter-Slots mit Primär-Behälter, zuklappbare Behälterlisten, Köcher-Munitionsauswahl und Ablegen auf den Boden. Der SL legt die Slots für alle Charaktere fest.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "authors": [
     {
       "name": "Ascandir"
