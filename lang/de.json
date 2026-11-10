@@ -140,7 +140,32 @@
       "AutoEquip": {
         "Name": "Ausgerüstetes automatisch auf die Paperdoll",
         "Hint": "Wird ein Gegenstand in der Liste ausgerüstet (Schild-Symbol), kommt er auf den passenden Slot der Paperdoll bzw. ins aktive Waffenset."
+      },
+      "Purse": {
+        "Name": "Geldbörsen verwenden",
+        "Hint": "Münzen liegen in Geldbörsen mit begrenzter Kapazität. Die normale Währung des Bogens wird ausgeblendet. Ausschalten bringt die normale Währung zurück."
+      },
+      "PurseCap": {
+        "Name": "Kapazität einer Geldbörse (Münzen)",
+        "Hint": "Wie viele Münzen standardmäßig in eine Geldbörse passen. Der SL kann das pro Geldbörse im Bogen ändern."
       }
+    },
+    "Purse": {
+      "Title": "Geldbörse",
+      "DefaultName": "Geldbörse",
+      "Capacity": "Wie viele Münzen in diese Geldbörse passen",
+      "Create": "Geldbörse anlegen",
+      "None": "Keine Geldbörse – dieser Charakter kann keine Münzen tragen.",
+      "NoPurse": "Keine Geldbörse, Münzen sind lose",
+      "Loose": "Kein Platz in der Geldbörse, lose Münzen",
+      "Stuff": "In Geldbörse packen",
+      "Overflow": "{n} Münzen passen nicht mehr in die Geldbörse und werden lose getragen.",
+      "Full": "In {purse} passen höchstens {cap} Münzen.",
+      "Mark": "Als Geldbörse verwenden",
+      "Unmark": "Keine Geldbörse mehr",
+      "MigrateIn": "Geldbörsen sind jetzt aktiv. Sollen die Münzen aller Charaktere in eine Geldbörse wandern? Charaktere ohne Geldbörse bekommen eine.",
+      "MigrateOut": "Geldbörsen sind jetzt aus. Sollen alle Münzen aus den Geldbörsen zurück in die normale Währung der Charaktere?",
+      "Migrated": "Münzen wurden umgelagert."
     }
   }
 }

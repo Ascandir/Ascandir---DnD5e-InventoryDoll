@@ -140,7 +140,32 @@
       "AutoEquip": {
         "Name": "Auto-place equipped items",
         "Hint": "Equipping an item in the list (shield icon) moves it onto the matching paperdoll slot or into the active weapon set."
+      },
+      "Purse": {
+        "Name": "Use purses",
+        "Hint": "Coins are kept in purse containers with a limited capacity. The normal currency of the sheet is hidden. Turning it off brings the normal currency back."
+      },
+      "PurseCap": {
+        "Name": "Purse capacity (coins)",
+        "Hint": "How many coins a purse holds by default. The GM can change it per purse on the sheet."
       }
+    },
+    "Purse": {
+      "Title": "Purse",
+      "DefaultName": "Purse",
+      "Capacity": "Coin capacity of this purse",
+      "Create": "Create purse",
+      "None": "No purse – this character cannot carry coins.",
+      "NoPurse": "No purse, coins are loose",
+      "Loose": "No room in the purse, loose coins",
+      "Stuff": "Put into purse",
+      "Overflow": "{n} coins did not fit into the purse and are carried loose.",
+      "Full": "{purse} holds at most {cap} coins.",
+      "Mark": "Use as purse",
+      "Unmark": "No longer a purse",
+      "MigrateIn": "Purses are now active. Move every character's coins into a purse? Characters without a purse get one.",
+      "MigrateOut": "Purses are now off. Move all coins from purses back into the characters' normal currency?",
+      "Migrated": "Coins have been moved."
     }
   }
 }

@@ -37,6 +37,15 @@ https://github.com/Ascandir/Ascandir---DnD5e-InventoryDoll/releases/latest/downl
 
 **Seitenleiste:** Auf dem Inventar-Reiter wird die Seitenleiste eingeklappt (das Porträt ist ja in der Paperdoll). Auf allen anderen Reitern bleibt sie.
 
+## Geldbörse (optional)
+
+Der SL schaltet in den Moduleinstellungen (oder im Slot-Editor) **Geldbörsen verwenden** ein und legt fest, wie viele Münzen hineinpassen.
+
+- Die normale Währung des Bogens verschwindet. Stattdessen zeigt das Inventar oben jede Geldbörse mit ihren Münzen und dem Füllstand.
+- Eine Geldbörse ist ein Behälter. Der SL legt sie per Knopf an oder markiert einen beliebigen Behälter mit dem Münz-Symbol als Geldbörse. Die Kapazität kann er pro Geldbörse direkt im Bogen ändern.
+- Geld, das von außen dazukommt oder abgeht (Belohnungen, Shops, andere Module), wird automatisch in die Geldbörsen gebucht. Passt nichts mehr hinein, trägt der Charakter die Münzen lose – das Inventar zeigt das als Warnung mit Knopf „In Geldbörse packen“.
+- Beim Ein- bzw. Ausschalten fragt das Modul, ob die Münzen aller Charaktere in die Geldbörsen bzw. zurück in die normale Währung wandern sollen.
+
 ## Für den SL
 
 *Spieleinstellungen → Moduleinstellungen → Ascandir - DnD5e InventoryDoll → Slots bearbeiten*
