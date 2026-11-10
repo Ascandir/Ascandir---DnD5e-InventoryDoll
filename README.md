@@ -17,7 +17,7 @@ https://github.com/Ascandir/Ascandir---DnD5e-InventoryDoll/releases/latest/downl
 
 **Links – Paperdoll**
 - Das Porträt des Charakters steht in der Mitte, die Ausrüstungs-Slots liegen darum herum, unten am Porträt die Rüstungsklasse.
-- Gegenstand auf einen Slot ziehen = ausgerüstet. Mit der Maus darüberfahren zeigt den Tooltip wie im normalen Inventar, Rechtsklick löst ihn als eigenes Fenster heraus. Umschalt + Rechtsklick = ablegen (landet im Primär-Behälter). Doppelklick öffnet den Gegenstand.
+- Gegenstand auf einen Slot ziehen = ausgerüstet. Mit der Maus darüberfahren zeigt den Tooltip wie im normalen Inventar, Rechtsklick löst ihn als eigenes Fenster heraus. Umschalt + Rechtsklick = ablegen (landet im Primär-Behälter). Klick auf einen Gegenstand löst seine Aktion aus (z. B. Angriff), Strg + Klick öffnet ihn.
 - Ausgerüstete Gegenstände erscheinen nur noch auf der Paperdoll, nicht mehr in der Liste rechts.
 - **Waffensets:** 3 Sets mit Haupt- und Nebenhand. Dieselbe Waffe darf in mehreren Sets liegen (z. B. Set I: Schwert + Schild, Set II: Schwert + Schwert). Beide Hände im selben Set mit derselben Waffe geht nur, wenn man mindestens 2 davon hat. Rausziehen oder Umschalt + Rechtsklick nimmt sie nur aus diesem einen Set. Zweihandwaffen belegen beide Hände. Klick auf I / II / III wechselt das aktive Set; nur dessen Waffen gelten als ausgerüstet.
   Ist **Ascandir - Combat HUD** aktiv, sind es dieselben Waffensets wie im HUD.
@@ -31,7 +31,9 @@ https://github.com/Ascandir/Ascandir---DnD5e-InventoryDoll/releases/latest/downl
 - Traglast, Währung, Suche und Einstimmung bleiben wie im Standardbogen.
 - Jeder angebundene Behälter erscheint als eigene, zuklappbare Liste mit Füllstand. Verbrauchsgüter lassen sich aus jedem Behälter direkt nutzen.
 - Darunter die normale dnd5e-Liste für alles, was nicht verstaut ist.
-- Gegenstände zwischen den Behältern hin- und herziehen funktioniert wie gewohnt.
+- Gegenstände zwischen den Behältern hin- und herziehen verschiebt sie. Behälter selbst lassen sich an ihrem Kopf greifen und auf einen Behälter-Slot ziehen.
+- Klick auf einen Gegenstand löst seine Aktion aus, Strg + Klick öffnet ihn.
+- **Kampf:** Der SL schaltet pro Behälter (Faust-Symbol im Kopf), ob man im Kampf daran kommt. Aus gesperrten Behältern kann im Kampf nichts benutzt werden – auch nicht im Ascandir Combat HUD (ab v0.4.3).
 
 **Seitenleiste:** Auf dem Inventar-Reiter wird die Seitenleiste eingeklappt (das Porträt ist ja in der Paperdoll). Auf allen anderen Reitern bleibt sie.
 

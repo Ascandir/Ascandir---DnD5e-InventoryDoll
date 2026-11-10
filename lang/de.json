@@ -56,7 +56,9 @@
       "Drop": "Behälter hierher",
       "Empty": "Leer",
       "Detached": "Nicht angelegt",
-      "Unstowed": "Nicht verstaut"
+      "Unstowed": "Nicht verstaut",
+      "CombatOn": "Im Kampf nutzbar (klicken zum Sperren)",
+      "CombatOff": "Im Kampf nicht erreichbar"
     },
     "Ammo": {
       "Label": "Aktive Munition",
@@ -81,7 +83,9 @@
       "NotWeapon": "{item} kann nicht in dieser Hand geführt werden.",
       "ContainerNotEmpty": "Leere den Behälter, bevor du ihn auf den Boden legst.",
       "NoToken": "Dein Charakter braucht einen Token in der aktuellen Szene.",
-      "NoGM": "Zum Ablegen auf den Boden muss ein SL online sein."
+      "NoGM": "Zum Ablegen auf den Boden muss ein SL online sein.",
+      "NotReachable": "{item} ist verstaut und kann im Kampf nicht benutzt werden.",
+      "NotReachableShort": "Im Kampf nicht erreichbar"
     },
     "Info": {
       "AutoFilled": "Ausgerüstete Gegenstände wurden einsortiert."

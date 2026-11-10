@@ -297,3 +297,9 @@
 .aid-ed-portrait { pointer-events: none; }
 .aid-ed-slot { cursor: grab; touch-action: none; }
 .aid-ed-slot:active { cursor: grabbing; }
+.aid-combat { width: 22px; height: 22px; min-height: 0; padding: 0; border: none; background: none; color: inherit; line-height: 1; font-size: 12px; display: inline-flex; align-items: center; justify-content: center; }
+.aid-combat.on { color: var(--dnd5e-color-gold); }
+.aid-combat.off { color: #e08080; }
+.aid-use-btn:disabled { opacity: .4; cursor: not-allowed; }
+.aid-container-header[draggable="true"] { cursor: grab; }
+.aid-doll [data-aid-item] { cursor: pointer; }

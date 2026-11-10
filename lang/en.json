@@ -56,7 +56,9 @@
       "Drop": "Drop container",
       "Empty": "Empty",
       "Detached": "Not attached",
-      "Unstowed": "Unstowed"
+      "Unstowed": "Unstowed",
+      "CombatOn": "Usable in combat (click to lock)",
+      "CombatOff": "Not reachable in combat"
     },
     "Ammo": {
       "Label": "Active ammunition",
@@ -81,7 +83,9 @@
       "NotWeapon": "{item} cannot be held in this hand.",
       "ContainerNotEmpty": "Empty the container before dropping it on the ground.",
       "NoToken": "Your character needs a token on the current scene.",
-      "NoGM": "A GM must be online to drop items on the ground."
+      "NoGM": "A GM must be online to drop items on the ground.",
+      "NotReachable": "{item} is packed away and cannot be used in combat.",
+      "NotReachableShort": "Not reachable in combat"
     },
     "Info": {
       "AutoFilled": "Equipped items have been sorted in."

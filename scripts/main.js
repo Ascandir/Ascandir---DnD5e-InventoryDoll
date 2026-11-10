@@ -221,6 +221,32 @@ function detach(d, sets, id) {
   }
 }
 
+/** Darf ein Gegenstand im Kampf benutzt werden? (Kein Behälter in der Kette ist vom SL gesperrt.) */
+function isReachable(item) {
+  const actor = item?.parent;
+  if ( !(actor instanceof Actor) ) return true;
+  let id = item.system?.container;
+  const seen = new Set();
+  while ( id && !seen.has(id) ) {
+    seen.add(id);
+    const c = actor.items.get(id);
+    if ( !c ) break;
+    if ( c.getFlag(ID, "combatUse") === false ) return false;
+    id = c.system.container;
+  }
+  return true;
+}
+
+const inCombat = actor => !!game.combat?.started && game.combat.combatants.some(c => c.actor === actor || c.actor?.id === actor.id);
+
+/** Klick auf einen Gegenstand: Aktion auslösen, sonst Bogen öffnen. */
+function useItem(item, event) {
+  if ( !item ) return;
+  if ( event?.ctrlKey || event?.metaKey || !item.system.activities?.size ) return item.sheet.render(true);
+  if ( !game.user.isGM && inCombat(item.parent) && !isReachable(item) ) return ui.notifications.warn(L("Warn.NotReachable", { item: item.name }));
+  return item.use({ event });
+}
+
 /* -------------------------------------------- */
 /*  Aktionen                                    */
 /* -------------------------------------------- */
@@ -380,6 +406,32 @@ async function autoFill(actor) {
     d.slots.push({ s: slot.id, i: item.id });
     worn.add(item.id);
     updates.push(equipUpdate(item, true));
+  }
+  // Zweite Runde: leere Slots mit nicht verstauten, passenden Gegenständen füllen
+  // (breite Typen wie Schmuckstück/Wundersam bleiben aus, damit kein Krimskrams angelegt wird)
+  for ( const slot of [...free] ) {
+    if ( ["trinket", "any"].includes(slot.type) ) continue;
+    const item = actor.items.find(i => !worn.has(i.id) && !i.system.container && (i.system.equipped !== undefined)
+      && matchesType(i, slot.type));
+    if ( !item ) continue;
+    free.splice(free.indexOf(slot), 1);
+    d.slots.push({ s: slot.id, i: item.id });
+    worn.add(item.id);
+    updates.push(equipUpdate(item, true));
+  }
+  // Waffen: leeres aktives Set mit nicht verstauten Waffen füllen
+  {
+    const s = data.sets[data.active];
+    const loose = actor.itemTypes.weapon.filter(w => !worn.has(w.id) && !w.system.container);
+    if ( !s.primary && loose.length ) {
+      const w = loose.shift();
+      s.primary = w.id; worn.add(w.id); updates.push(equipUpdate(w, true));
+    }
+    if ( !s.secondary && !isTwoHanded(actor.items.get(s.primary)) ) {
+      const off = actor.items.find(i => !worn.has(i.id) && !i.system.container && isShield(i))
+        ?? loose.find(w => w.system.properties?.has?.("lgt") && !isTwoHanded(w));
+      if ( off ) { s.secondary = off.id; worn.add(off.id); updates.push(equipUpdate(off, true)); }
+    }
   }
   if ( !d.containers.some(Boolean) ) {
     const packs = actor.itemTypes.container.filter(c => !c.system.container);
@@ -612,8 +664,9 @@ function renderRow(app, item, editable) {
   const qty = item.system.quantity ?? 1;
   const weight = item.system.totalWeight ?? ((item.system.weight?.value ?? 0) * qty);
   const uses = item.system.uses?.max ? `${item.system.uses.value ?? 0}/${item.system.uses.max}` : "";
+  const blocked = !game.user.isGM && inCombat(app.actor) && !isReachable(item);
   const useCell = isConsumable(item) && app.actor.isOwner
-    ? `<button type="button" class="aid-use-btn" data-aid-act="use">${esc(L("Row.Use"))}</button>${uses ? `<span class="aid-uses">${esc(uses)}</span>` : ""}`
+    ? `<button type="button" class="aid-use-btn" data-aid-act="use" ${blocked ? `disabled data-tooltip="${esc(L("Warn.NotReachableShort"))}"` : ""}>${esc(L("Row.Use"))}</button>${uses ? `<span class="aid-uses">${esc(uses)}</span>` : ""}`
     : (uses ? esc(uses) : "<span class=\"aid-dim\">–</span>");
   const qtyCell = editable
     ? `<a class="aid-adj" data-aid-act="dec" aria-label="−"><i class="fa-solid fa-minus" inert></i></a><span>${qty}</span><a class="aid-adj" data-aid-act="inc" aria-label="+"><i class="fa-solid fa-plus" inert></i></a>`
@@ -648,6 +701,14 @@ function capacityOf(container) {
   return null;
 }
 
+function combatToggle(container) {
+  const ok = container.getFlag(ID, "combatUse") !== false;
+  const tip = esc(L(ok ? "Containers.CombatOn" : "Containers.CombatOff"));
+  if ( !game.user.isGM ) return ok ? "" : `<span class="aid-combat off" data-tooltip="${tip}"><i class="fa-solid fa-ban" inert></i></span>`;
+  return `<button type="button" class="aid-combat ${ok ? "on" : "off"}" data-aid-combat="${container.id}" data-tooltip="${tip}" aria-label="${tip}">
+      <i class="fa-solid ${ok ? "fa-hand-fist" : "fa-ban"}" inert></i></button>`;
+}
+
 function renderContainerSection(app, container, { primary = false, attached = true, collapsed = false }, editable) {
   const cap = capacityOf(container);
   const pct = cap ? Math.clamp(Math.round((Number(cap.value) / Number(cap.max)) * 100), 0, 100) : 0;
@@ -655,12 +716,13 @@ function renderContainerSection(app, container, { primary = false, attached = tr
   const rows = items.length ? items.map(i => renderRow(app, i, editable)).join("")
     : `<li class="aid-empty">${esc(L("Containers.Empty"))}</li>`;
   return `<div class="aid-container container ${collapsed ? "collapsed" : ""} ${attached ? "" : "detached"}" data-item-id="${container.id}" data-uuid="${esc(container.uuid)}">
-      <div class="aid-container-header" data-aid-toggle="${container.id}" role="button" aria-expanded="${!collapsed}">
+      <div class="aid-container-header" data-aid-toggle="${container.id}" role="button" aria-expanded="${!collapsed}" ${editable ? "draggable=\"true\"" : ""} ${tipAttrs(container, "LEFT")}>
         <i class="fa-solid fa-chevron-right aid-chevron" inert></i>
         <h3>${esc(container.name)}</h3>
         ${primary ? `<span class="aid-pill">★ ${esc(L("Containers.Primary"))}</span>` : ""}
         ${attached ? "" : `<span class="aid-pill dim">${esc(L("Containers.Detached"))}</span>`}
         <span class="aid-spacer"></span>
+        ${combatToggle(container)}
         ${cap ? `<span class="aid-meter ${pct >= 100 ? "full" : ""}"><span style="width:${pct}%"></span></span><span class="aid-captext">${esc(cap.text)}</span>` : ""}
       </div>
       <div class="aid-container-body">
@@ -753,9 +815,10 @@ function bindDoll(app, actor, aside) {
 
   // Doppelklick öffnet den Gegenstand
   aside.querySelectorAll("[data-aid-item]").forEach(el => {
-    el.addEventListener("dblclick", ev => {
+    el.addEventListener("click", ev => {
+      if ( ev.target.closest("select, button, input") ) return;
       ev.preventDefault();
-      actor.items.get(el.dataset.aidItem)?.sheet.render(true);
+      useItem(actor.items.get(el.dataset.aidItem), ev);
     });
     el.addEventListener("contextmenu", ev => {
       ev.preventDefault();
@@ -835,6 +898,18 @@ function bindContainers(app, actor, tab) {
   const wrap = tab.querySelector(".aid-containers");
   if ( !wrap ) return;
 
+  wrap.querySelectorAll("[data-aid-combat]").forEach(b => b.addEventListener("click", async ev => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const c = actor.items.get(b.dataset.aidCombat);
+    if ( c && game.user.isGM ) await c.setFlag(ID, "combatUse", c.getFlag(ID, "combatUse") === false);
+  }));
+
+  wrap.querySelectorAll(".aid-container-header[draggable=\"true\"]").forEach(h => h.addEventListener("dragstart", ev => {
+    const c = actor.items.get(h.dataset.aidToggle);
+    if ( c ) setDragData(ev, c, { from: "container" });
+  }));
+
   wrap.querySelectorAll("[data-aid-toggle]").forEach(h => h.addEventListener("click", async ev => {
     if ( ev.target.closest("a, button, select, input") ) return;
     const id = h.dataset.aidToggle;
@@ -854,11 +929,12 @@ function bindContainers(app, actor, tab) {
     row.addEventListener("dragstart", ev => setDragData(ev, item, { from: "container" }));
     row.querySelector("[data-aid-act=open]")?.addEventListener("click", ev => {
       ev.preventDefault();
-      item.sheet.render(true);
+      useItem(item, ev);
     });
     row.querySelector("[data-aid-act=use]")?.addEventListener("click", ev => {
       ev.preventDefault();
       ev.stopPropagation();
+      if ( !game.user.isGM && inCombat(actor) && !isReachable(item) ) return ui.notifications.warn(L("Warn.NotReachable", { item: item.name }));
       item.use({ event: ev });
     });
     row.querySelectorAll("[data-aid-act=inc], [data-aid-act=dec]").forEach(a => a.addEventListener("click", ev => {
@@ -874,6 +950,31 @@ function bindContainers(app, actor, tab) {
   });
 }
 
+/** Zeile oder Behälter aus der rechten Spalte verschieben (statt dnd5e-Kopie). */
+async function moveBetweenContainers(actor, data, event) {
+  const item = await Item.implementation.fromDropData(data).catch(() => null);
+  if ( item?.parent !== actor ) return false;
+  if ( !actor.isOwner ) return true;
+  const target = event.target.closest(".aid-container[data-item-id]")?.dataset.itemId ?? null;
+  if ( target === item.id ) return true;
+  // Nicht in sich selbst oder einen eigenen Unterbehälter legen
+  let id = target;
+  const seen = new Set();
+  while ( id && !seen.has(id) ) {
+    if ( id === item.id ) return true;
+    seen.add(id);
+    id = actor.items.get(id)?.system.container;
+  }
+  if ( (item.system.container ?? null) === target ) return true;
+  const d = getDoll(actor);
+  if ( d.containers.includes(item.id) || d.slots.some(e => e.i === item.id) ) {
+    await unequip(actor, item, target);
+    return true;
+  }
+  await actor.updateEmbeddedDocuments("Item", [{ _id: item.id, "system.container": target }], { aid: true });
+  return true;
+}
+
 /**
  * Drops auf dem Bogen abfangen: Was von der Paperdoll in die rechte Spalte gezogen wird, wird abgelegt
  * (in den Ziel-Behälter oder den Primär-Behälter). Drops auf der Paperdoll selbst verarbeitet nur die Paperdoll.
@@ -885,7 +986,8 @@ async function handleSheetDrop(app, event) {
   if ( event.target?.closest?.(".aid-doll") ) return true;
   if ( !event.target?.closest?.(".tab.aid-tab") ) return false;
   const data = parseDrop(event);
-  if ( (data?.type !== "Item") || (data.aidFrom !== "doll") ) return false;
+  if ( (data?.type !== "Item") || !["doll", "container"].includes(data.aidFrom) ) return false;
+  if ( data.aidFrom === "container" ) return moveBetweenContainers(actor, data, event);
   if ( !canEdit(actor) ) return true;
   const item = await Item.implementation.fromDropData(data).catch(() => null);
   if ( item?.parent !== actor ) return true;
@@ -1148,6 +1250,7 @@ Hooks.once("setup", () => {
 });
 
 Hooks.once("ready", () => {
+  game.modules.get(ID).api = { isReachable, getLayout, getDoll };
   game.socket.on(SOCKET, msg => {
     if ( (msg?.action === "ground") && (msg.gmId === game.user.id) ) groundHandler(msg.payload, msg.userId);
   });
