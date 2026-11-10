@@ -278,21 +278,17 @@ async function assignWeapon(actor, item, set, which) {
   const removed = [];
   d.slots = d.slots.filter(e => e.i !== item.id);
   d.containers = d.containers.map(c => (c === item.id ? null : c));
-  // Eine Waffe liegt immer nur an einer Stelle: aus allen anderen Sets entfernen
-  for ( const [n, other] of Object.entries(data.sets) ) {
-    if ( n === set ) continue;
-    if ( other.primary === item.id ) other.primary = null;
-    if ( other.secondary === item.id ) other.secondary = null;
-  }
+  // Eine Waffe darf in mehreren Sets liegen. Im selben Set beide Hände nur, wenn man mindestens 2 davon hat.
+  const pair = (item.system.quantity ?? 1) >= 2;
 
   if ( which === "primary" ) {
     if ( s.primary && (s.primary !== item.id) ) removed.push(s.primary);
-    if ( s.secondary === item.id ) s.secondary = null;
+    if ( (s.secondary === item.id) && !pair ) s.secondary = null;
     s.primary = item.id;
     if ( isTwoHanded(item) && s.secondary ) { removed.push(s.secondary); s.secondary = null; }
   } else {
     if ( s.secondary && (s.secondary !== item.id) ) removed.push(s.secondary);
-    if ( s.primary === item.id ) s.primary = null;
+    if ( (s.primary === item.id) && !pair ) s.primary = null;
     s.secondary = item.id;
     if ( s.primary && isTwoHanded(actor.items.get(s.primary)) ) { removed.push(s.primary); s.primary = null; }
   }
@@ -306,6 +302,18 @@ async function assignWeapon(actor, item, set, which) {
     else updates.push(stowUpdate(it, primaryContainer(actor, d)));
   }
   await commit(actor, { ...dollUpdate(d), ...setsUpdate(data) }, updates);
+}
+
+/** Eine Waffe aus genau einer Set-Position nehmen. Liegt sie in keinem Set mehr, kommt sie in einen Behälter. */
+async function removeFromSet(actor, item, set, which, containerId) {
+  const d = getDoll(actor);
+  const data = getSets(actor);
+  const s = data.sets[set];
+  if ( s?.[which] === item.id ) s[which] = null;
+  const update = setIds(data).has(item.id)
+    ? equipUpdate(item, inActiveSet(data, item.id))
+    : stowUpdate(item, containerId === undefined ? primaryContainer(actor, d, item.id) : containerId);
+  await commit(actor, setsUpdate(data), [update]);
 }
 
 async function switchSet(actor, n) {
@@ -706,6 +714,7 @@ async function resolveDropItem(actor, data) {
 
 function setDragData(event, item, extra = {}) {
   const data = { ...item.toDragData(), aidFrom: extra.from ?? null };
+  if ( extra.set ) Object.assign(data, { aidSet: extra.set, aidWhich: extra.which });
   const json = JSON.stringify(data);
   event.dataTransfer.setData("text/plain", json);
   event.dataTransfer.setData("application/json", json);
@@ -738,7 +747,7 @@ function bindDoll(app, actor, aside) {
     el.addEventListener("dragstart", ev => {
       const host = el.closest("[data-aid-item]");
       const item = actor.items.get(host.dataset.aidItem);
-      if ( item ) setDragData(ev, item, { from: "doll" });
+      if ( item ) setDragData(ev, item, { from: "doll", set: host.dataset.set, which: host.dataset.which });
     });
   });
 
@@ -753,7 +762,10 @@ function bindDoll(app, actor, aside) {
       ev.stopPropagation();
       const item = actor.items.get(el.dataset.aidItem);
       if ( !item ) return;
-      if ( ev.shiftKey && editable ) return unequip(actor, item, el.dataset.aidDrop === "container" ? null : undefined);
+      if ( ev.shiftKey && editable ) {
+        if ( el.dataset.aidDrop === "weapon" ) return removeFromSet(actor, item, el.dataset.set, el.dataset.which);
+        return unequip(actor, item, el.dataset.aidDrop === "container" ? null : undefined);
+      }
       lockTooltip(el);
     });
   });
@@ -879,7 +891,8 @@ async function handleSheetDrop(app, event) {
   if ( item?.parent !== actor ) return true;
   const target = event.target.closest(".aid-container[data-item-id]")?.dataset.itemId;
   if ( target === item.id ) return true;
-  await unequip(actor, item, target ?? undefined);
+  if ( data.aidSet ) await removeFromSet(actor, item, data.aidSet, data.aidWhich, target ?? undefined);
+  else await unequip(actor, item, target ?? undefined);
   return true;
 }
 
@@ -1171,7 +1184,11 @@ Hooks.on("updateItem", (item, changes, options, userId) => {
   // Abgerüstet (z. B. Schild-Symbol in der Liste) → von der Paperdoll in den Primär-Behälter
   // (Waffen aus inaktiven Sets werden beim Set-Wechsel abgerüstet – die bleiben im Set.)
   if ( !(inSlot || inActive) ) return;
-  detach(d, sets, item.id);
+  d.slots = d.slots.filter(e => e.i !== item.id);
+  const act = sets.sets[sets.active];
+  if ( act.primary === item.id ) act.primary = null;
+  if ( act.secondary === item.id ) act.secondary = null;
+  if ( setIds(sets).has(item.id) ) return commit(actor, { ...dollUpdate(d), ...setsUpdate(sets) }, []);
   const target = item.system.container ? null : primaryContainer(actor, d, item.id);
   const updates = target ? [{ _id: item.id, "system.container": target }] : [];
   return commit(actor, { ...dollUpdate(d), ...setsUpdate(sets) }, updates);

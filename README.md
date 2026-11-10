@@ -19,7 +19,7 @@ https://github.com/Ascandir/Ascandir---DnD5e-InventoryDoll/releases/latest/downl
 - Das Porträt des Charakters steht in der Mitte, die Ausrüstungs-Slots liegen darum herum, unten am Porträt die Rüstungsklasse.
 - Gegenstand auf einen Slot ziehen = ausgerüstet. Mit der Maus darüberfahren zeigt den Tooltip wie im normalen Inventar, Rechtsklick löst ihn als eigenes Fenster heraus. Umschalt + Rechtsklick = ablegen (landet im Primär-Behälter). Doppelklick öffnet den Gegenstand.
 - Ausgerüstete Gegenstände erscheinen nur noch auf der Paperdoll, nicht mehr in der Liste rechts.
-- **Waffensets:** 3 Sets mit Haupt- und Nebenhand. Eine Waffe liegt immer nur an einer Stelle – ziehst du sie in ein anderes Set, wird sie verschoben. Zweihandwaffen belegen beide Hände. Klick auf I / II / III wechselt das aktive Set; nur dessen Waffen gelten als ausgerüstet.
+- **Waffensets:** 3 Sets mit Haupt- und Nebenhand. Dieselbe Waffe darf in mehreren Sets liegen (z. B. Set I: Schwert + Schild, Set II: Schwert + Schwert). Beide Hände im selben Set mit derselben Waffe geht nur, wenn man mindestens 2 davon hat. Rausziehen oder Umschalt + Rechtsklick nimmt sie nur aus diesem einen Set. Zweihandwaffen belegen beide Hände. Klick auf I / II / III wechselt das aktive Set; nur dessen Waffen gelten als ausgerüstet.
   Ist **Ascandir - Combat HUD** aktiv, sind es dieselben Waffensets wie im HUD.
 - **Behälter-Slots:** Rucksack & Co. hineinziehen. Der erste Slot (★) ist der Primär-Behälter: Alles, was von der Paperdoll abgelegt wird, landet dort.
 - **Köcher:** Liegt Munition in einem angebundenen Behälter, erscheint ein Auswahlfeld. Die gewählte Munition wird bei Fernkampfwaffen als Munition vorausgewählt.
