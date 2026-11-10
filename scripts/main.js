@@ -881,12 +881,13 @@ function renderContainerSlots(actor, d, editable) {
   const cells = [];
   for ( let i = 0; i < layout.containerSlots; i++ ) {
     const c = actor.items.get(d.containers[i]);
-    const tag = i === 0 ? `★ ${L("Containers.Primary")}` : `${i + 1}`;
-    cells.push(`<div class="aid-cslot ${c ? "filled" : "empty"} ${i === 0 ? "primary" : ""}" data-aid-drop="container" data-index="${i}"
-        ${c ? `data-aid-item="${c.id}" ${tipAttrs(c)}` : ""}>
-        <span class="aid-ctag">${esc(tag)}</span>
+    const primary = i === 0;
+    const tip = primary ? `${L("Containers.Primary")} – ${L("Containers.Hint")}` : L("Containers.Drop");
+    cells.push(`<div class="aid-cslot ${c ? "filled" : "empty"} ${primary ? "primary" : ""}" data-aid-drop="container" data-index="${i}"
+        ${c ? `data-aid-item="${c.id}" ${tipAttrs(c)}` : `data-tooltip="${esc(tip)}"`}>
+        ${primary ? `<span class="aid-ctag" aria-label="${esc(L("Containers.Primary"))}">★</span>` : ""}
         ${c ? `<div class="aid-cbody" ${editable ? "draggable=\"true\"" : ""}>${img(c.img, c.name)}${combatToggle(c)}</div>${ammoSelect(actor, c, d)}`
-    : `<span class="aid-cplace">${esc(L("Containers.Drop"))}</span>`}
+    : `<span class="aid-cplace" aria-label="${esc(L("Containers.Drop"))}"><i class="fa-solid fa-plus" inert></i></span>`}
       </div>`);
   }
   const collapsed = !!game.user.getFlag(ID, "cbarCollapsed");

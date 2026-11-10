@@ -464,3 +464,35 @@
 .aid-cbar .aid-cbody .aid-combat { position: absolute; top: -4px; right: -14px; margin: 0; background: rgba(0,0,0,.6); border-radius: 50%; width: 18px; height: 18px; font-size: 10px; }
 .aid-cbar .aid-cbody span.aid-combat { display: inline-flex; align-items: center; justify-content: center; }
 .aid-cbar .aid-cplace { text-align: center; font-size: 10px; }
+
+/* ---------- v0.2.6: kompakte Behälter-Slots ---------- */
+.aid-cbar .aid-cslots { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; padding: 8px 10px; }
+.aid-cbar .aid-cslot {
+  position: relative;
+  width: auto; min-height: 0; padding: 0;
+  border: none; background: none;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.aid-cbar .aid-cbody,
+.aid-cbar .aid-cplace {
+  position: relative;
+  width: 48px; height: 48px; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 4px;
+}
+.aid-cbar .aid-cbody { border: 1px solid var(--dnd5e-color-gold); background: var(--dnd5e-gold-icon-background, #222); padding: 0; }
+.aid-cbar .aid-cslot.primary .aid-cbody { border-width: 2px; }
+.aid-cbar .aid-cbody img { width: 100%; height: 100%; border-radius: 3px; object-fit: cover; }
+.aid-cbar .aid-cplace { border: 1px dashed var(--dnd5e-color-gold); color: var(--dnd5e-color-gold); font-size: 14px; opacity: .7; }
+.aid-cbar .aid-cslot.primary .aid-cplace { border-width: 2px; }
+.aid-cbar .aid-ctag {
+  position: absolute; top: -6px; left: -6px; z-index: 1;
+  width: 16px; height: 16px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; line-height: 1;
+  background: var(--dnd5e-color-gold); color: #1b1c20;
+}
+.aid-cbar .aid-cbody .aid-combat { top: -6px; right: -6px; }
+.aid-cbar .aid-ammo { width: 96px; height: 20px; font-size: 10px; }
+.aid-cbar .aid-over .aid-cbody, .aid-cbar .aid-over .aid-cplace { box-shadow: 0 0 8px var(--dnd5e-color-gold); opacity: 1; }
+.aid-cbar .aid-cslot.aid-over { box-shadow: none; }
