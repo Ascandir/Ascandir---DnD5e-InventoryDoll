@@ -293,3 +293,7 @@
 .aid-ed-buttons { display: flex; gap: 8px; margin-top: auto; }
 .aid-ed-buttons button { flex: 1; }
 .aid-ed-buttons button.bright { flex: 2; }
+.aid-ed-figure { cursor: crosshair; }
+.aid-ed-portrait { pointer-events: none; }
+.aid-ed-slot { cursor: grab; touch-action: none; }
+.aid-ed-slot:active { cursor: grabbing; }

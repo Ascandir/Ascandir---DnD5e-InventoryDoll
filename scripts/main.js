@@ -59,10 +59,23 @@ const DEFAULT_LAYOUT = {
   ]
 };
 
+/** Position eines Slots in % (frei gesetzt oder über einen Ankerpunkt). */
+function withPosition(slot) {
+  if ( !Number.isFinite(slot.x) || !Number.isFinite(slot.y) ) {
+    const a = ANCHORS[slot.anchor];
+    if ( !a ) return null;
+    slot.x = a.x;
+    slot.y = a.y;
+  }
+  slot.x = Math.clamp(slot.x, 4, 96);
+  slot.y = Math.clamp(slot.y, 4, 96);
+  return slot;
+}
+
 function getLayout() {
-  const l = foundry.utils.deepClone(setting("layout") ?? {});
-  if ( !Array.isArray(l.slots) ) return foundry.utils.deepClone(DEFAULT_LAYOUT);
-  l.slots = l.slots.filter(s => ANCHORS[s.anchor] && (s.type in SLOT_TYPES));
+  let l = foundry.utils.deepClone(setting("layout") ?? {});
+  if ( !Array.isArray(l.slots) ) l = foundry.utils.deepClone(DEFAULT_LAYOUT);
+  l.slots = l.slots.filter(s => s && (s.type in SLOT_TYPES)).map(withPosition).filter(Boolean);
   l.containerSlots = Math.clamp(Number(l.containerSlots) || 4, 1, 8);
   return l;
 }
@@ -122,6 +135,13 @@ const hudActive = () => !!game.modules.get(HUD_ID)?.active;
 
 /** Waffensets (gemeinsam mit dem Ascandir Combat HUD, sonst eigene Ablage). */
 function getSets(actor) {
+  const hudApi = hudActive() ? game.modules.get(HUD_ID)?.api : null;
+  if ( hudApi?.getWeaponSets ) {
+    try {
+      const r = hudApi.getWeaponSets(actor);
+      return { scope: HUD_ID, active: String(r.active ?? "1"), sets: foundry.utils.deepClone(r.sets) };
+    } catch ( err ) { console.warn(`${ID} | Combat HUD Waffensets`, err); }
+  }
   const scope = hudActive() ? HUD_ID : ID;
   const f = actor.flags?.[scope]?.weaponSets ?? {};
   // Gleiche Vorbelegung wie das Combat HUD, solange noch nichts gespeichert ist
@@ -180,6 +200,15 @@ async function commit(actor, flagUpdate, itemUpdates) {
   for ( const u of itemUpdates ) merged.set(u._id, { ...(merged.get(u._id) ?? {}), ...u });
   if ( flagUpdate && Object.keys(flagUpdate).length ) await actor.update(flagUpdate);
   if ( merged.size ) await actor.updateEmbeddedDocuments("Item", [...merged.values()], { aid: true });
+  refreshHud(actor);
+}
+
+/** Combat HUD sofort neu zeichnen, damit die Waffensets dort gleich stimmen. */
+function refreshHud(actor) {
+  const hud = game.modules.get(HUD_ID)?.api?.hud;
+  try {
+    if ( hud?.rendered && (!hud.concerns || hud.concerns(actor)) ) hud.render();
+  } catch { /* HUD optional */ }
 }
 
 /** Referenzen eines Gegenstands aus Slots, Sets und Behälter-Slots entfernen (verändert d/sets). */
@@ -249,6 +278,12 @@ async function assignWeapon(actor, item, set, which) {
   const removed = [];
   d.slots = d.slots.filter(e => e.i !== item.id);
   d.containers = d.containers.map(c => (c === item.id ? null : c));
+  // Eine Waffe liegt immer nur an einer Stelle: aus allen anderen Sets entfernen
+  for ( const [n, other] of Object.entries(data.sets) ) {
+    if ( n === set ) continue;
+    if ( other.primary === item.id ) other.primary = null;
+    if ( other.secondary === item.id ) other.secondary = null;
+  }
 
   if ( which === "primary" ) {
     if ( s.primary && (s.primary !== item.id) ) removed.push(s.primary);
@@ -462,11 +497,11 @@ function tipAttrs(item, direction = "RIGHT") {
 }
 
 function renderSlot(actor, slot, d, editable) {
-  const a = ANCHORS[slot.anchor];
+  const a = slot;
   const item = actor.items.get(slotItemId(d, slot.id));
   const label = slotLabel(slot);
   return `<div class="aid-slot ${item ? "filled" : "empty"}" style="left:${a.x}%;top:${a.y}%"
-      data-aid-drop="slot" data-slot="${esc(slot.id)}" ${item ? `data-aid-item="${item.id}" ${tipAttrs(item, ANCHORS[slot.anchor].x > 50 ? "LEFT" : "RIGHT")}` : `data-tooltip="${esc(label)}"`}>
+      data-aid-drop="slot" data-slot="${esc(slot.id)}" ${item ? `data-aid-item="${item.id}" ${tipAttrs(item, slot.x > 50 ? "LEFT" : "RIGHT")}` : `data-tooltip="${esc(label)}"`}>
       <div class="aid-tile" ${item && editable ? "draggable=\"true\"" : ""}>${item ? img(item.img, item.name) : ""}</div>
       <span class="aid-label">${esc(label)}</span>
     </div>`;
@@ -646,11 +681,14 @@ function renderContainers(app, actor) {
 /* -------------------------------------------- */
 
 function parseDrop(event) {
-  try {
-    return JSON.parse(event.dataTransfer.getData("text/plain"));
-  } catch {
-    return null;
+  const dt = event.dataTransfer;
+  for ( const type of ["application/json", "text/plain"] ) {
+    try {
+      const raw = dt?.getData(type);
+      if ( raw ) return JSON.parse(raw);
+    } catch { /* nächstes Format */ }
   }
+  return null;
 }
 
 async function resolveDropItem(actor, data) {
@@ -668,7 +706,9 @@ async function resolveDropItem(actor, data) {
 
 function setDragData(event, item, extra = {}) {
   const data = { ...item.toDragData(), aidFrom: extra.from ?? null };
-  event.dataTransfer.setData("text/plain", JSON.stringify(data));
+  const json = JSON.stringify(data);
+  event.dataTransfer.setData("text/plain", json);
+  event.dataTransfer.setData("application/json", json);
   event.dataTransfer.effectAllowed = "copyMove";
   event.stopPropagation();
 }
@@ -822,24 +862,25 @@ function bindContainers(app, actor, tab) {
   });
 }
 
-/** Gegenstände von der Paperdoll, die in die rechte Spalte gezogen werden → in einen Behälter. */
-function bindRightSide(app, actor, tab) {
-  if ( tab.dataset.aidBound ) return;
-  tab.dataset.aidBound = "1";
-  tab.addEventListener("drop", async ev => {
-    if ( ev.target.closest(".aid-doll") ) return;
-    const data = parseDrop(ev);
-    if ( !data?.aidFrom || (data.aidFrom !== "doll") ) return;
-    ev.preventDefault();
-    ev.stopPropagation();
-    if ( !canEdit(actor) ) return;
-    const item = await Item.implementation.fromDropData(data).catch(() => null);
-    if ( item?.parent !== actor ) return;
-    const box = ev.target.closest(".aid-container[data-item-id]");
-    const target = box?.dataset.itemId;
-    if ( target === item.id ) return;
-    await unequip(actor, item, target ?? undefined);
-  });
+/**
+ * Drops auf dem Bogen abfangen: Was von der Paperdoll in die rechte Spalte gezogen wird, wird abgelegt
+ * (in den Ziel-Behälter oder den Primär-Behälter). Drops auf der Paperdoll selbst verarbeitet nur die Paperdoll.
+ * @returns {Promise<boolean>} true, wenn der Drop erledigt ist.
+ */
+async function handleSheetDrop(app, event) {
+  const actor = app.actor;
+  if ( !actor || (actor.type !== "character") ) return false;
+  if ( event.target?.closest?.(".aid-doll") ) return true;
+  if ( !event.target?.closest?.(".tab.aid-tab") ) return false;
+  const data = parseDrop(event);
+  if ( (data?.type !== "Item") || (data.aidFrom !== "doll") ) return false;
+  if ( !canEdit(actor) ) return true;
+  const item = await Item.implementation.fromDropData(data).catch(() => null);
+  if ( item?.parent !== actor ) return true;
+  const target = event.target.closest(".aid-container[data-item-id]")?.dataset.itemId;
+  if ( target === item.id ) return true;
+  await unequip(actor, item, target ?? undefined);
+  return true;
 }
 
 function hideWornRows(actor, tab) {
@@ -889,7 +930,6 @@ function inject(app, element) {
     for ( const node of [...box.children] ) inv.insertBefore(node, list);
     bindContainers(app, actor, tab);
   }
-  bindRightSide(app, actor, tab);
   hideWornRows(actor, tab);
 
   if ( setting("hideSidebar") && (app.tabGroups?.primary === "inventory") ) app._toggleSidebar?.(true);
@@ -917,15 +957,14 @@ class LayoutEditor extends ApplicationV2 {
 
   async _renderHTML() {
     const lay = this.layout;
-    const anchors = Object.entries(ANCHORS).map(([key, a]) => {
-      const slot = lay.slots.find(s => s.anchor === key);
-      const style = `left:${a.x}%;top:${a.y}%`;
-      if ( slot ) {
-        return `<button type="button" class="aid-ed-slot ${slot.id === this.selected ? "selected" : ""}" style="${style}" data-select="${esc(slot.id)}">
-            <span class="aid-ed-tile">${esc(slotLabel(slot))}</span><span class="aid-ed-type">${esc(slotTypeLabel(slot.type))}</span></button>`;
-      }
-      return `<button type="button" class="aid-ed-add" style="${style}" data-add="${key}" aria-label="${esc(L("Editor.Add"))}" data-tooltip="${esc(L("Editor.Add"))}">+</button>`;
-    }).join("");
+    const slots = lay.slots.map(slot => `<button type="button" class="aid-ed-slot ${slot.id === this.selected ? "selected" : ""}"
+        style="left:${slot.x}%;top:${slot.y}%" data-select="${esc(slot.id)}">
+        <span class="aid-ed-tile">${esc(slotLabel(slot))}</span><span class="aid-ed-type">${esc(slotTypeLabel(slot.type))}</span></button>`).join("");
+    // Vorgeschlagene freie Stellen bekommen ein „+“; zusätzlich kann überall in die Fläche geklickt werden.
+    const free = Object.values(ANCHORS).filter(a => !lay.slots.some(sl => Math.hypot(sl.x - a.x, (sl.y - a.y) * 1.25) < 9));
+    const adds = free.map(a => `<button type="button" class="aid-ed-add" style="left:${a.x}%;top:${a.y}%" data-add-x="${a.x}" data-add-y="${a.y}"
+        aria-label="${esc(L("Editor.Add"))}" data-tooltip="${esc(L("Editor.Add"))}">+</button>`).join("");
+    const anchors = adds + slots;
     const sel = lay.slots.find(s => s.id === this.selected);
     const typeOpts = Object.keys(SLOT_TYPES).map(t => `<option value="${t}" ${sel?.type === t ? "selected" : ""}>${esc(slotTypeLabel(t))}</option>`).join("");
     const form = sel ? `
@@ -935,7 +974,7 @@ class LayoutEditor extends ApplicationV2 {
         <button type="button" class="aid-ed-remove" data-remove><i class="fa-solid fa-trash" inert></i> ${esc(L("Editor.Remove"))}</button>`
       : `<p class="aid-ed-hint">${esc(L("Editor.NoSelection"))}</p>`;
     return `<div class="aid-ed">
-        <div class="aid-ed-figure">
+        <div class="aid-ed-figure" data-figure>
           <div class="aid-ed-portrait"><i class="fa-solid fa-user" inert></i></div>
           ${anchors}
         </div>
@@ -957,16 +996,59 @@ class LayoutEditor extends ApplicationV2 {
 
   _replaceHTML(result, content) {
     content.innerHTML = result;
-    content.querySelectorAll("[data-select]").forEach(b => b.addEventListener("click", () => {
-      this.selected = b.dataset.select;
-      this.render();
-    }));
-    content.querySelectorAll("[data-add]").forEach(b => b.addEventListener("click", () => {
+    const figure = content.querySelector("[data-figure]");
+    const addAt = (x, y) => {
       const id = foundry.utils.randomID(8);
-      this.layout.slots.push({ id, anchor: b.dataset.add, type: "ring", label: "" });
+      const type = this.layout.slots.find(sl => sl.id === this.selected)?.type ?? "ring";
+      this.layout.slots.push({ id, x: Math.round(Math.clamp(x, 4, 96)), y: Math.round(Math.clamp(y, 4, 96)), type, label: "" });
       this.selected = id;
       this.render();
+    };
+    const pct = ev => {
+      const r = figure.getBoundingClientRect();
+      return { x: ((ev.clientX - r.left) / r.width) * 100, y: ((ev.clientY - r.top) / r.height) * 100 };
+    };
+    content.querySelectorAll("[data-add-x]").forEach(b => b.addEventListener("click", ev => {
+      ev.stopPropagation();
+      addAt(Number(b.dataset.addX), Number(b.dataset.addY));
     }));
+    // In eine freie Stelle der Figur klicken = neuer Slot genau dort
+    figure?.addEventListener("click", ev => {
+      if ( ev.target.closest(".aid-ed-slot, .aid-ed-add") ) return;
+      const p = pct(ev);
+      addAt(p.x, p.y);
+    });
+    // Slots anklicken = auswählen, ziehen = verschieben
+    content.querySelectorAll("[data-select]").forEach(b => {
+      b.addEventListener("pointerdown", ev => {
+        if ( ev.button !== 0 ) return;
+        ev.preventDefault();
+        const slot = this.layout.slots.find(sl => sl.id === b.dataset.select);
+        const start = { x: ev.clientX, y: ev.clientY };
+        let moved = false;
+        b.setPointerCapture(ev.pointerId);
+        const move = e => {
+          if ( !moved && (Math.hypot(e.clientX - start.x, e.clientY - start.y) < 4) ) return;
+          moved = true;
+          const p = pct(e);
+          slot.x = Math.round(Math.clamp(p.x, 4, 96));
+          slot.y = Math.round(Math.clamp(p.y, 4, 96));
+          b.style.left = `${slot.x}%`;
+          b.style.top = `${slot.y}%`;
+        };
+        const up = () => {
+          b.removeEventListener("pointermove", move);
+          b.removeEventListener("pointerup", up);
+          b.removeEventListener("pointercancel", up);
+          this.selected = slot.id;
+          this.render();
+        };
+        b.addEventListener("pointermove", move);
+        b.addEventListener("pointerup", up);
+        b.addEventListener("pointercancel", up);
+      });
+      b.addEventListener("click", ev => ev.stopPropagation());
+    });
     const sel = () => this.layout.slots.find(s => s.id === this.selected);
     content.querySelector("[data-field=type]")?.addEventListener("change", ev => {
       const s = sel();
@@ -1036,6 +1118,13 @@ Hooks.once("setup", () => {
   // Seitenleiste auf dem Inventar-Reiter einklappen, auf anderen Reitern wie gewohnt.
   const Sheet = globalThis.dnd5e?.applications?.actor?.CharacterActorSheet;
   if ( !Sheet ) return console.warn(`${ID} | CharacterActorSheet nicht gefunden`);
+  const originalDrop = Sheet.prototype._onDrop;
+  Sheet.prototype._onDrop = async function(event) {
+    try {
+      if ( setting("enabled") && await handleSheetDrop(this, event) ) return;
+    } catch ( err ) { console.error(`${ID} | Drop`, err); }
+    return originalDrop.call(this, event);
+  };
   const original = Sheet.prototype.changeTab;
   Sheet.prototype.changeTab = function(tab, group, options) {
     original.call(this, tab, group, options);
@@ -1069,11 +1158,21 @@ Hooks.on("updateItem", (item, changes, options, userId) => {
   const unequipped = foundry.utils.getProperty(changes, "system.equipped") === false;
   if ( !movedIn && !unequipped ) return;
   const d = getDoll(actor);
-  const inSlot = d.slots.some(e => e.i === item.id);
-  const inContainerSlot = d.containers.includes(item.id);
-  if ( !(movedIn && (inSlot || inContainerSlot || setIds(getSets(actor)).has(item.id))) && !(unequipped && inSlot) ) return;
   const sets = getSets(actor);
-  if ( movedIn ) detach(d, sets, item.id);
-  else d.slots = d.slots.filter(e => e.i !== item.id);
-  actor.update({ ...dollUpdate(d), ...(movedIn ? setsUpdate(sets) : {}) });
+  const inSlot = d.slots.some(e => e.i === item.id);
+  const inSet = setIds(sets).has(item.id);
+  const inActive = inActiveSet(sets, item.id);
+  const inContainerSlot = d.containers.includes(item.id);
+  if ( movedIn ) {
+    if ( !(inSlot || inSet || inContainerSlot) ) return;
+    detach(d, sets, item.id);
+    return commit(actor, { ...dollUpdate(d), ...setsUpdate(sets) }, []);
+  }
+  // Abgerüstet (z. B. Schild-Symbol in der Liste) → von der Paperdoll in den Primär-Behälter
+  // (Waffen aus inaktiven Sets werden beim Set-Wechsel abgerüstet – die bleiben im Set.)
+  if ( !(inSlot || inActive) ) return;
+  detach(d, sets, item.id);
+  const target = item.system.container ? null : primaryContainer(actor, d, item.id);
+  const updates = target ? [{ _id: item.id, "system.container": target }] : [];
+  return commit(actor, { ...dollUpdate(d), ...setsUpdate(sets) }, updates);
 });

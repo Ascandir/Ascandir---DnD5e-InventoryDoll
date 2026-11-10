@@ -97,7 +97,7 @@
       "Fixed": "Fixed areas",
       "WeaponSets": "Weapon sets (Combat HUD quickslots)",
       "ContainerSlots": "Container slots",
-      "Hint": "Wondrous items have no slot type in dnd5e. They are recognized by name (e.g. Cloak, Boots, Ring). If that fails, hold Shift while dropping it on the slot: the item remembers the slot type.",
+      "Hint": "Click anywhere on the figure to add a slot there (or use a +). Drag slots to move them. Any type may be used several times. Wondrous items are recognized by name; if that fails, hold Shift while dropping it on the slot.",
       "Reset": "Default",
       "Save": "Save layout",
       "Saved": "Paperdoll layout saved.",

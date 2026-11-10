@@ -97,7 +97,7 @@
       "Fixed": "Feste Bereiche",
       "WeaponSets": "Waffensets (Combat-HUD-Quickslots)",
       "ContainerSlots": "Behälter-Slots",
-      "Hint": "Wundersame Gegenstände haben in dnd5e keinen Slot-Typ. Sie werden am Namen erkannt (z. B. Umhang, Stiefel, Ring). Klappt das nicht, halte beim Ablegen auf den Slot die Umschalttaste gedrückt: Der Gegenstand merkt sich den Slot-Typ.",
+      "Hint": "Irgendwo auf die Figur klicken legt dort einen Slot an (oder ein + nutzen). Slots lassen sich mit der Maus verschieben. Jeder Typ darf mehrfach vorkommen. Wundersame Gegenstände werden am Namen erkannt; klappt das nicht, beim Ablegen auf den Slot die Umschalttaste halten.",
       "Reset": "Standard",
       "Save": "Layout speichern",
       "Saved": "Paperdoll-Layout gespeichert.",
