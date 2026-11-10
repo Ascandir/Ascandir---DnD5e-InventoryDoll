@@ -625,3 +625,6 @@
   .dnd5e2.sheet.actor.character .tab.aid-tab.active { grid-template-columns: minmax(0, 1fr); }
   .dnd5e2.sheet.actor.character .tab.aid-tab > .aid-doll { max-width: 440px; width: 100%; justify-self: center; }
 }
+
+/* ---------- v0.2.17: Figur passt sich der Fensterhöhe an ---------- */
+.aid-figure { width: min(calc(100% - 16px), calc(var(--aid-fit-h, 78vh) * 2 / 3)); }

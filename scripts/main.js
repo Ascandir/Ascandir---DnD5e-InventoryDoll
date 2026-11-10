@@ -1459,6 +1459,19 @@ function hideWornRows(actor, tab) {
   }
 }
 
+/** Figur an die sichtbare Höhe des Fensters anpassen (wächst nicht über 440 px Breite). */
+function fitDoll(tab, aside) {
+  const host = tab.closest(".tab-body") ?? tab.parentElement ?? tab;
+  const fit = () => {
+    if ( !aside.isConnected ) return ro.disconnect();
+    const h = host.clientHeight;
+    if ( h ) aside.style.setProperty("--aid-fit-h", `${Math.max(200, h - 100)}px`);
+  };
+  const ro = new ResizeObserver(fit);
+  ro.observe(host);
+  fit();
+}
+
 function inject(app, element) {
   const actor = app.actor;
   if ( !actor || (actor.type !== "character") || !setting("enabled") ) return;
@@ -1476,6 +1489,7 @@ function inject(app, element) {
   const aside = tmp.firstElementChild;
   tab.prepend(aside);
   bindDoll(app, actor, aside);
+  fitDoll(tab, aside);
 
   // Behälter rechts (im Inventar-Element, damit der dnd5e-Stil greift)
   const inv = tab.querySelector(".inventory-element");
