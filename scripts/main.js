@@ -885,7 +885,7 @@ function renderContainerSlots(actor, d, editable) {
     cells.push(`<div class="aid-cslot ${c ? "filled" : "empty"} ${i === 0 ? "primary" : ""}" data-aid-drop="container" data-index="${i}"
         ${c ? `data-aid-item="${c.id}" ${tipAttrs(c)}` : ""}>
         <span class="aid-ctag">${esc(tag)}</span>
-        ${c ? `<div class="aid-cbody" ${editable ? "draggable=\"true\"" : ""}>${img(c.img, c.name)}<span class="aid-cname">${esc(c.name)}</span>${combatToggle(c)}</div>${ammoSelect(actor, c, d)}`
+        ${c ? `<div class="aid-cbody" ${editable ? "draggable=\"true\"" : ""}>${img(c.img, c.name)}${combatToggle(c)}</div>${ammoSelect(actor, c, d)}`
     : `<span class="aid-cplace">${esc(L("Containers.Drop"))}</span>`}
       </div>`);
   }

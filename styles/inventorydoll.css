@@ -455,3 +455,12 @@
 .aid-ed-fixed.hand { width: 64px; height: 64px; }
 .aid-ed-fixed.ac { width: 44px; height: 50px; border-radius: 6px 6px 22px 22px; font-weight: bold; }
 .aid-ed-sets { font-size: 9px; color: var(--dnd5e-color-gold, #9f9275); }
+
+/* ---------- v0.2.5: Behälter-Slots nur mit Bild ---------- */
+.aid-cbar .aid-cslots { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); }
+.aid-cbar .aid-cslot { align-items: center; }
+.aid-cbar .aid-cbody { position: relative; justify-content: center; }
+.aid-cbar .aid-cbody img { width: 44px; height: 44px; border-radius: 4px; }
+.aid-cbar .aid-cbody .aid-combat { position: absolute; top: -4px; right: -14px; margin: 0; background: rgba(0,0,0,.6); border-radius: 50%; width: 18px; height: 18px; font-size: 10px; }
+.aid-cbar .aid-cbody span.aid-combat { display: inline-flex; align-items: center; justify-content: center; }
+.aid-cbar .aid-cplace { text-align: center; font-size: 10px; }
