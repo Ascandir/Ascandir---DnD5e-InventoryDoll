@@ -6,7 +6,7 @@
 
 .dnd5e2.sheet.actor.character .tab.aid-tab.active {
   display: grid;
-  grid-template-columns: minmax(250px, 36%) minmax(0, 1fr);
+  grid-template-columns: minmax(300px, 46%) minmax(0, 1fr);
   column-gap: 12px;
   row-gap: 8px;
   align-items: start;
@@ -17,7 +17,7 @@
 .dnd5e2.sheet.actor.character .tab.aid-tab .top .containers { display: none; }
 .dnd5e2.sheet.actor.character .tab.aid-tab .aid-hidden { display: none !important; }
 
-@container aid-tabs (max-width: 620px) {
+@container aid-tabs (max-width: 680px) {
   .dnd5e2.sheet.actor.character .tab.aid-tab.active { grid-template-columns: minmax(0, 1fr); }
   .dnd5e2.sheet.actor.character .tab.aid-tab > .aid-doll { grid-column: 1; grid-row: auto; position: static; }
   .dnd5e2.sheet.actor.character .tab.aid-tab > * { grid-column: 1; }
@@ -60,10 +60,10 @@
 .aid-auto:hover { color: var(--dnd5e-color-gold); box-shadow: none; }
 
 /* ---------- Figur mit Porträt ---------- */
-.aid-figure { position: relative; aspect-ratio: 4 / 5; margin: 8px; }
+.aid-figure { position: relative; aspect-ratio: 2 / 3; margin: 8px; }
 .aid-portrait {
   position: absolute;
-  left: 24%; width: 52%; top: 2%; height: 76%;
+  left: 24%; width: 52%; top: 2%; height: 48%;
   border: 2px solid var(--dnd5e-color-gold);
   border-radius: 4px;
   overflow: hidden;
@@ -72,9 +72,9 @@
 .aid-portrait img { width: 100%; height: 100%; object-fit: cover; object-position: top center; border: none; }
 .aid-ac {
   position: absolute;
-  left: 50%; top: 70%;
+  left: 50%; top: 45%;
   transform: translateX(-50%);
-  width: 44px; height: 50px;
+  width: 48px; height: 54px;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   background: var(--dnd5e-background-card);
   border: 2px solid var(--dnd5e-color-gold);
@@ -88,10 +88,11 @@
   position: absolute;
   transform: translate(-50%, -50%);
   display: flex; flex-direction: column; align-items: center; gap: 2px;
-  width: 64px;
+  width: 72px;
 }
 .aid-tile {
-  width: 40px; height: 40px;
+  position: relative;
+  width: 46px; height: 46px;
   box-sizing: border-box;
   border-radius: 4px;
   border: 1px dashed var(--dnd5e-color-gold);
@@ -331,3 +332,81 @@
 .aid-loose .fa-triangle-exclamation { color: #e0a050; }
 .aid-loose button { height: 24px; min-height: 0; line-height: 22px; padding: 0 10px; margin-left: auto; font-size: 12px; }
 .aid-purse-new { align-self: flex-start; height: 30px; min-height: 0; padding: 0 12px; }
+
+
+/* ---------- v0.2: Hände, Set-Knöpfe, Einstimmung ---------- */
+.aid-hand {
+  position: absolute; top: 64%;
+  transform: translate(-50%, -50%);
+  width: 96px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.aid-hand.secondary { left: 13%; }
+.aid-hand.primary { left: 87%; }
+.aid-hand .aid-label { color: var(--dnd5e-color-gold); font-weight: bold; }
+.aid-tile.big { width: 68px; height: 68px; }
+.aid-hand.filled .aid-tile { border: 2px solid var(--dnd5e-color-gold); background: var(--dnd5e-gold-icon-background, #222); cursor: grab; }
+.aid-hand.ghost .aid-tile { border-style: dashed; opacity: .6; cursor: default; }
+.aid-2h {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--dnd5e-font-roboto-condensed, sans-serif); font-weight: bold; font-size: 16px;
+  color: #fff; text-shadow: 0 0 4px #000;
+}
+.aid-hname {
+  max-width: 96px; min-height: 14px;
+  font-family: var(--dnd5e-font-roboto-slab, serif); font-weight: bold; font-size: 11px; text-align: center;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.aid-setbar {
+  position: absolute; left: 50%; top: 64%;
+  transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.aid-setpills { display: flex; gap: 6px; }
+.aid-setpill {
+  width: 44px; height: 30px; min-height: 0; padding: 0;
+  font-family: var(--dnd5e-font-roboto-slab, serif); font-weight: bold; font-size: 13px;
+  background: transparent; color: var(--color-text-secondary);
+  border: 1px solid var(--dnd5e-color-gold); border-radius: 4px;
+}
+.aid-setpill.active { background: var(--dnd5e-color-gold); color: #1b1c20; }
+.aid-setnote { font-family: var(--dnd5e-font-roboto-condensed, sans-serif); font-size: 9px; text-transform: uppercase; color: var(--color-text-secondary); white-space: nowrap; }
+.aid-att {
+  position: absolute; top: -5px; right: -5px;
+  width: 16px; height: 16px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; background: #1b1c20; border: 1px solid var(--dnd5e-color-gold);
+}
+.aid-att.on { color: var(--dnd5e-color-gold); }
+.aid-att.off { color: #e08080; border-color: #e08080; }
+.aid-tile { overflow: visible; }
+.aid-tile img { border-radius: 3px; }
+
+/* Behälter-Slots als Leiste rechts */
+.aid-cbar {
+  background: var(--dnd5e-background-card);
+  border-radius: 4px;
+  box-shadow: 0 0 6px var(--dnd5e-shadow-45);
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.aid-cbar.collapsed .aid-cslots { display: none; }
+.aid-cbar.collapsed .aid-chevron { transform: rotate(0deg); }
+.aid-cbar .aid-cslots { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+.aid-cbar .aid-cbody .aid-combat { margin-left: auto; }
+.aid-cbar .aid-over { box-shadow: 0 0 8px var(--dnd5e-color-gold); border-color: var(--dnd5e-color-gold); border-style: solid; }
+
+/* Editor: feste Bereiche */
+.aid-ed-figure { aspect-ratio: 2 / 3; width: 380px; }
+.aid-ed-portrait { top: 2%; height: 48%; }
+.aid-ed-fixed {
+  position: absolute; transform: translate(-50%, -50%);
+  display: flex; align-items: center; justify-content: center;
+  border: 1px dashed rgba(159, 146, 117, .6); border-radius: 4px;
+  font-size: 10px; opacity: .7; text-align: center; cursor: not-allowed;
+}
+.aid-ed-fixed.hand { top: 64%; width: 64px; height: 64px; }
+.aid-ed-fixed.hand.off { left: 13%; }
+.aid-ed-fixed.hand.main { left: 87%; }
+.aid-ed-fixed.sets { left: 50%; top: 64%; width: 150px; height: 30px; }

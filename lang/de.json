@@ -47,7 +47,9 @@
       "Main": "Haupthand",
       "Off": "Nebenhand",
       "TwoHanded": "Zweihändig",
-      "Activate": "Waffenset aktivieren"
+      "Activate": "Waffenset aktivieren",
+      "TwoHandedShort": "2H",
+      "Empty": "leer"
     },
     "Containers": {
       "Title": "Behälter",
@@ -85,7 +87,8 @@
       "NoToken": "Dein Charakter braucht einen Token in der aktuellen Szene.",
       "NoGM": "Zum Ablegen auf den Boden muss ein SL online sein.",
       "NotReachable": "{item} ist verstaut und kann im Kampf nicht benutzt werden.",
-      "NotReachableShort": "Im Kampf nicht erreichbar"
+      "NotReachableShort": "Im Kampf nicht erreichbar",
+      "NoAttunement": "Kein freier Einstimmungsplatz ({max}) – {item} wird ohne Einstimmung angelegt."
     },
     "Info": {
       "AutoFilled": "Ausgerüstete Gegenstände wurden einsortiert."
@@ -148,6 +151,10 @@
       "PurseCap": {
         "Name": "Kapazität einer Geldbörse (Münzen)",
         "Hint": "Wie viele Münzen standardmäßig in eine Geldbörse passen. Der SL kann das pro Geldbörse im Bogen ändern."
+      },
+      "Attune": {
+        "Name": "Beim Anlegen einstimmen",
+        "Hint": "Wer einen Gegenstand mit Einstimmungspflicht anlegt, stimmt sich ein, solange ein Platz frei ist; wird er von der Paperdoll genommen, endet die Einstimmung. Waffenset-Wechsel ändern die Einstimmung nicht."
       }
     },
     "Purse": {
@@ -166,6 +173,10 @@
       "MigrateIn": "Geldbörsen sind jetzt aktiv. Sollen die Münzen aller Charaktere in eine Geldbörse wandern? Charaktere ohne Geldbörse bekommen eine.",
       "MigrateOut": "Geldbörsen sind jetzt aus. Sollen alle Münzen aus den Geldbörsen zurück in die normale Währung der Charaktere?",
       "Migrated": "Münzen wurden umgelagert."
+    },
+    "Attune": {
+      "On": "Eingestimmt",
+      "Off": "Einstimmung nötig – nicht eingestimmt"
     }
   }
 }

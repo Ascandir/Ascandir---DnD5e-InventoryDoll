@@ -18,9 +18,9 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": 
 
 /** Feste Ankerpunkte um das Porträt (Mittelpunkt in % der Figur-Fläche, Seitenverhältnis 4:5). */
 const ANCHORS = {
-  l0: { x: 11, y: 8 }, l1: { x: 11, y: 24 }, l2: { x: 11, y: 40 }, l3: { x: 11, y: 56 }, l4: { x: 11, y: 72 },
-  r0: { x: 89, y: 8 }, r1: { x: 89, y: 24 }, r2: { x: 89, y: 40 }, r3: { x: 89, y: 56 }, r4: { x: 89, y: 72 },
-  b0: { x: 22, y: 91 }, b1: { x: 36, y: 91 }, b2: { x: 50, y: 91 }, b3: { x: 64, y: 91 }, b4: { x: 78, y: 91 }
+  l0: { x: 11, y: 6 }, l1: { x: 11, y: 16 }, l2: { x: 11, y: 26 }, l3: { x: 11, y: 36 }, l4: { x: 11, y: 46 },
+  r0: { x: 89, y: 6 }, r1: { x: 89, y: 16 }, r2: { x: 89, y: 26 }, r3: { x: 89, y: 36 }, r4: { x: 89, y: 46 },
+  b0: { x: 22, y: 82 }, b1: { x: 36, y: 82 }, b2: { x: 50, y: 82 }, b3: { x: 64, y: 82 }, b4: { x: 78, y: 82 }
 };
 
 /** Slot-Typen mit Stichworten (EN + DE) für Wundersame Gegenstände ohne eigenen Ausrüstungstyp. */
@@ -41,7 +41,9 @@ const SLOT_TYPES = {
   any: []
 };
 
+const LAYOUT_VERSION = 2;
 const DEFAULT_LAYOUT = {
+  v: LAYOUT_VERSION,
   containerSlots: 4,
   slots: [
     { id: "head", anchor: "l0", type: "head", label: "" },
@@ -75,6 +77,13 @@ function withPosition(slot) {
 function getLayout() {
   let l = foundry.utils.deepClone(setting("layout") ?? {});
   if ( !Array.isArray(l.slots) ) l = foundry.utils.deepClone(DEFAULT_LAYOUT);
+  // Layouts aus v0.1 (niedrigere Figur) auf die neue, höhere Figur umrechnen
+  if ( l.v !== LAYOUT_VERSION ) {
+    for ( const sl of l.slots ) {
+      if ( Number.isFinite(sl?.x) && Number.isFinite(sl?.y) ) sl.y = sl.y > 80 ? 82 : Math.round(sl.y * 0.62) + 1;
+    }
+    l.v = LAYOUT_VERSION;
+  }
   l.slots = l.slots.filter(s => s && (s.type in SLOT_TYPES)).map(withPosition).filter(Boolean);
   l.containerSlots = Math.clamp(Number(l.containerSlots) || 4, 1, 8);
   return l;
@@ -183,13 +192,14 @@ function wornIds(actor) {
 
 /** Update, um einen Gegenstand abzulegen (in einen Behälter oder lose). */
 function stowUpdate(item, containerId) {
-  const u = { _id: item.id, "system.container": (containerId && (containerId !== item.id)) ? containerId : null };
+  const u = { _id: item.id, _aidStow: true, "system.container": (containerId && (containerId !== item.id)) ? containerId : null };
   if ( item.system.equipped !== undefined ) u["system.equipped"] = false;
   return u;
 }
 
 function equipUpdate(item, equipped = true) {
   const u = { _id: item.id, "system.container": null };
+  if ( equipped ) u._aidEquip = true;
   if ( item.system.equipped !== undefined ) u["system.equipped"] = equipped;
   return u;
 }
@@ -198,9 +208,43 @@ function equipUpdate(item, equipped = true) {
 async function commit(actor, flagUpdate, itemUpdates) {
   const merged = new Map();
   for ( const u of itemUpdates ) merged.set(u._id, { ...(merged.get(u._id) ?? {}), ...u });
+  applyAttunement(actor, [...merged.values()]);
   if ( flagUpdate && Object.keys(flagUpdate).length ) await actor.update(flagUpdate);
   if ( merged.size ) await actor.updateEmbeddedDocuments("Item", [...merged.values()], { aid: true });
   refreshHud(actor);
+}
+
+/**
+ * Einstimmung beim Anlegen/Ablegen: Wer etwas mit Einstimmungspflicht anlegt, stimmt sich ein, solange Plätze frei sind;
+ * wird es ganz von der Paperdoll genommen, endet die Einstimmung. Set-Wechsel ändern nichts.
+ */
+function applyAttunement(actor, updates) {
+  const on = setting("autoAttune");
+  const att = actor.system.attributes?.attunement ?? {};
+  let used = Number(att.value) || 0;
+  const max = Number(att.max) || 3;
+  const ordered = [...updates].sort((a, b) => (b._aidStow ? 1 : 0) - (a._aidStow ? 1 : 0));
+  for ( const u of ordered ) {
+    const item = actor.items.get(u._id);
+    const req = item?.system.attunement === "required";
+    if ( on && req && u._aidStow && item.system.attuned ) {
+      u["system.attuned"] = false;
+      used--;
+    } else if ( on && req && u._aidEquip && !item.system.attuned ) {
+      if ( used < max ) {
+        u["system.attuned"] = true;
+        used++;
+      } else ui.notifications.warn(L("Warn.NoAttunement", { item: item.name, max }));
+    }
+    delete u._aidStow;
+    delete u._aidEquip;
+  }
+}
+
+function attuneBadge(item) {
+  if ( item?.system.attunement !== "required" ) return "";
+  const on = !!item.system.attuned;
+  return `<span class="aid-att ${on ? "on" : "off"}" data-tooltip="${esc(L(on ? "Attune.On" : "Attune.Off"))}"><i class="fa-solid fa-sun" inert></i></span>`;
 }
 
 /** Combat HUD sofort neu zeichnen, damit die Waffensets dort gleich stimmen. */
@@ -777,41 +821,36 @@ function renderSlot(actor, slot, d, editable) {
   const label = slotLabel(slot);
   return `<div class="aid-slot ${item ? "filled" : "empty"}" style="left:${a.x}%;top:${a.y}%"
       data-aid-drop="slot" data-slot="${esc(slot.id)}" ${item ? `data-aid-item="${item.id}" ${tipAttrs(item, slot.x > 50 ? "LEFT" : "RIGHT")}` : `data-tooltip="${esc(label)}"`}>
-      <div class="aid-tile" ${item && editable ? "draggable=\"true\"" : ""}>${item ? img(item.img, item.name) : ""}</div>
+      <div class="aid-tile" ${item && editable ? "draggable=\"true\"" : ""}>${item ? img(item.img, item.name) + attuneBadge(item) : ""}</div>
       <span class="aid-label">${esc(label)}</span>
     </div>`;
 }
 
-function renderWeaponSlot(actor, set, which, id, editable, two = false) {
-  const item = actor.items.get(id);
-  const placeholder = L(which === "primary" ? "Sets.Main" : "Sets.Off");
-  return `<div class="aid-wslot ${item ? "filled" : "empty"} ${two ? "two" : ""}" data-aid-drop="weapon" data-set="${set}" data-which="${which}"
-      ${item ? `data-aid-item="${item.id}" ${tipAttrs(item)}` : ""} ${item && editable ? "draggable=\"true\"" : ""}>
-      ${item ? `<span class="aid-wimg">${img(item.img, item.name)}</span><span class="aid-wname">${esc(item.name)}</span>`
-    : `<span class="aid-wplace">${esc(placeholder)}</span>`}
-      ${two ? `<span class="aid-pill">${esc(L("Sets.TwoHanded"))}</span>` : ""}
-    </div>`;
-}
-
-function renderSets(actor, editable) {
+function renderHands(actor, editable) {
   const data = getSets(actor);
-  const nums = { 1: "I", 2: "II", 3: "III" };
-  const rows = ["1", "2", "3"].map(n => {
-    const s = data.sets[n];
-    const main = actor.items.get(s.primary);
-    const two = isTwoHanded(main);
-    const slots = two
-      ? renderWeaponSlot(actor, n, "primary", s.primary, editable, true)
-      : renderWeaponSlot(actor, n, "primary", s.primary, editable) + renderWeaponSlot(actor, n, "secondary", s.secondary, editable);
-    return `<div class="aid-set ${data.active === n ? "active" : ""}">
-        <button type="button" class="aid-setnum" data-aid-set="${n}" data-tooltip="${esc(L("Sets.Activate"))}">${nums[n]}</button>
-        <div class="aid-setslots">${slots}</div>
+  const set = data.sets[data.active];
+  const main = actor.items.get(set.primary);
+  const off = actor.items.get(set.secondary);
+  const two = isTwoHanded(main);
+  const hand = (which, item, ghost = false) => {
+    const label = L(which === "primary" ? "Sets.Main" : "Sets.Off");
+    const real = item && !ghost;
+    return `<div class="aid-hand ${which} ${item ? "filled" : "empty"} ${ghost ? "ghost" : ""}" data-aid-drop="weapon" data-set="${data.active}" data-which="${which}"
+        ${real ? `data-aid-item="${item.id}" ${tipAttrs(item, which === "primary" ? "LEFT" : "RIGHT")}` : `data-tooltip="${esc(label)}"`} ${real && editable ? "draggable=\"true\"" : ""}>
+        <span class="aid-label">${esc(label.toUpperCase())}</span>
+        <div class="aid-tile big">${item ? img(item.img, item.name) : ""}${ghost ? `<span class="aid-2h">${esc(L("Sets.TwoHandedShort"))}</span>` : ""}${real ? attuneBadge(item) : ""}</div>
+        <span class="aid-hname">${item ? esc(item.name) : ""}</span>
       </div>`;
+  };
+  const nums = { 1: "I", 2: "II", 3: "III" };
+  const pills = ["1", "2", "3"].map(n => {
+    const st = data.sets[n];
+    const names = [actor.items.get(st.primary)?.name, actor.items.get(st.secondary)?.name].filter(Boolean).join(" · ") || L("Sets.Empty");
+    return `<button type="button" class="aid-setpill ${data.active === n ? "active" : ""}" data-aid-set="${n}" data-aid-drop="setpill" data-set="${n}"
+        data-tooltip="${esc(`${L("Sets.Title")} ${nums[n]}: ${names}`)}">${nums[n]}</button>`;
   }).join("");
-  return `<section class="aid-card">
-      <header class="aid-header"><h3>${esc(L("Sets.Title"))}</h3><span>${esc(L(hudActive() ? "Sets.SyncedHud" : "Sets.Own"))}</span></header>
-      <div class="aid-sets">${rows}</div>
-    </section>`;
+  return `${hand("secondary", two ? main : off, two)}${hand("primary", main)}
+    <div class="aid-setbar"><div class="aid-setpills">${pills}</div><span class="aid-setnote">${esc(L(hudActive() ? "Sets.SyncedHud" : "Sets.Own"))}</span></div>`;
 }
 
 function ammoSelect(actor, container, d) {
@@ -832,12 +871,16 @@ function renderContainerSlots(actor, d, editable) {
     cells.push(`<div class="aid-cslot ${c ? "filled" : "empty"} ${i === 0 ? "primary" : ""}" data-aid-drop="container" data-index="${i}"
         ${c ? `data-aid-item="${c.id}" ${tipAttrs(c)}` : ""}>
         <span class="aid-ctag">${esc(tag)}</span>
-        ${c ? `<div class="aid-cbody" ${editable ? "draggable=\"true\"" : ""}>${img(c.img, c.name)}<span class="aid-cname">${esc(c.name)}</span></div>${ammoSelect(actor, c, d)}`
+        ${c ? `<div class="aid-cbody" ${editable ? "draggable=\"true\"" : ""}>${img(c.img, c.name)}<span class="aid-cname">${esc(c.name)}</span>${combatToggle(c)}</div>${ammoSelect(actor, c, d)}`
     : `<span class="aid-cplace">${esc(L("Containers.Drop"))}</span>`}
       </div>`);
   }
-  return `<section class="aid-card">
-      <header class="aid-header"><h3>${esc(L("Containers.Title"))}</h3><span>${esc(L("Containers.Hint"))}</span></header>
+  const collapsed = !!game.user.getFlag(ID, "cbarCollapsed");
+  return `<section class="aid-cbar ${collapsed ? "collapsed" : ""} ${editable ? "editable" : ""}">
+      <header class="aid-container-header" data-aid-cbar-toggle role="button" aria-expanded="${!collapsed}">
+        <i class="fa-solid fa-chevron-right aid-chevron" inert></i><h3>${esc(L("Containers.Title"))}</h3>
+        <span class="aid-spacer"></span><span class="aid-captext">${esc(L("Containers.Hint"))}</span>
+      </header>
       <div class="aid-cslots">${cells.join("")}</div>
     </section>`;
 }
@@ -861,10 +904,9 @@ function renderDoll(app, actor) {
           <div class="aid-portrait">${img(actor.img, actor.name)}</div>
           <div class="aid-ac" data-tooltip="${esc(L("Doll.AC"))}"><span>${esc(L("Doll.ACShort"))}</span><strong>${esc(ac)}</strong></div>
           ${slots}
+          ${renderHands(actor, editable)}
         </div>
       </section>
-      ${renderSets(actor, editable)}
-      ${renderContainerSlots(actor, d, editable)}
       ${ground}
     </aside>`;
 }
@@ -1055,8 +1097,23 @@ function bindDoll(app, actor, aside) {
     });
   });
 
+  aside.querySelector("[data-aid-cbar-toggle]")?.addEventListener("click", async ev => {
+    if ( ev.target.closest("button, select, input") ) return;
+    const bar = aside.closest(".aid-cbar") ?? aside;
+    bar.classList.toggle("collapsed");
+    await game.user.setFlag(ID, "cbarCollapsed", bar.classList.contains("collapsed"));
+  });
+
+  aside.querySelectorAll("[data-aid-combat]").forEach(b => b.addEventListener("click", async ev => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const c = actor.items.get(b.dataset.aidCombat);
+    if ( c && game.user.isGM ) await c.setFlag(ID, "combatUse", c.getFlag(ID, "combatUse") === false);
+  }));
+
   aside.querySelectorAll("[data-aid-set]").forEach(b => b.addEventListener("click", ev => {
     ev.preventDefault();
+    ev.stopPropagation();
     if ( editable || actor.isOwner ) switchSet(actor, b.dataset.aidSet);
   }));
 
@@ -1111,6 +1168,14 @@ function bindDoll(app, actor, aside) {
     if ( !item ) return;
     if ( kind === "slot" ) return equipToSlot(actor, item, t.dataset.slot, { force: ev.shiftKey });
     if ( kind === "weapon" ) return assignWeapon(actor, item, t.dataset.set, t.dataset.which);
+    if ( kind === "setpill" ) {
+      const st = getSets(actor).sets[t.dataset.set];
+      const main = actor.items.get(st.primary);
+      let which = "primary";
+      if ( isShield(item) || isFocus(item) ) which = "secondary";
+      else if ( main && (main.id !== item.id) && !isTwoHanded(main) && !isTwoHanded(item) && !st.secondary ) which = "secondary";
+      return assignWeapon(actor, item, t.dataset.set, which);
+    }
     if ( kind === "container" ) return assignContainer(actor, item, Number(t.dataset.index));
   });
 }
@@ -1212,7 +1277,7 @@ async function moveBetweenContainers(actor, data, event) {
 async function handleSheetDrop(app, event) {
   const actor = app.actor;
   if ( !actor || (actor.type !== "character") ) return false;
-  if ( event.target?.closest?.(".aid-doll") ) return true;
+  if ( event.target?.closest?.(".aid-doll, .aid-cbar") ) return true;
   if ( !event.target?.closest?.(".tab.aid-tab") ) return false;
   const data = parseDrop(event);
   if ( (data?.type !== "Item") || !["doll", "container"].includes(data.aidFrom) ) return false;
@@ -1269,13 +1334,16 @@ function inject(app, element) {
   const inv = tab.querySelector(".inventory-element");
   const list = inv?.querySelector(".items-list");
   tab.classList.toggle("aid-purse-mode", purseActive());
-  tab.querySelectorAll(".aid-purses").forEach(e => e.remove());
+  tab.querySelectorAll(".aid-purses, .aid-cbar").forEach(e => e.remove());
   if ( inv && list ) {
     const box = document.createElement("div");
-    box.innerHTML = (purseActive() ? renderPurses(app, actor) : "") + renderContainers(app, actor);
+    box.innerHTML = renderContainerSlots(actor, getDoll(actor), app.isEditable && canEdit(actor))
+      + (purseActive() ? renderPurses(app, actor) : "") + renderContainers(app, actor);
     for ( const node of [...box.children] ) inv.insertBefore(node, list);
     bindContainers(app, actor, tab);
     bindPurses(app, actor, tab);
+    const bar = tab.querySelector(".aid-cbar");
+    if ( bar ) bindDoll(app, actor, bar);
   }
   hideWornRows(actor, tab);
 
@@ -1323,6 +1391,9 @@ class LayoutEditor extends ApplicationV2 {
     return `<div class="aid-ed">
         <div class="aid-ed-figure" data-figure>
           <div class="aid-ed-portrait"><i class="fa-solid fa-user" inert></i></div>
+          <div class="aid-ed-fixed hand off">${esc(L("Sets.Off"))}</div>
+          <div class="aid-ed-fixed hand main">${esc(L("Sets.Main"))}</div>
+          <div class="aid-ed-fixed sets">I · II · III</div>
           ${anchors}
         </div>
         <div class="aid-ed-side">
@@ -1365,7 +1436,7 @@ class LayoutEditor extends ApplicationV2 {
     }));
     // In eine freie Stelle der Figur klicken = neuer Slot genau dort
     figure?.addEventListener("click", ev => {
-      if ( ev.target.closest(".aid-ed-slot, .aid-ed-add") ) return;
+      if ( ev.target.closest(".aid-ed-slot, .aid-ed-add, .aid-ed-fixed") ) return;
       const p = pct(ev);
       addAt(p.x, p.y);
     });
@@ -1432,6 +1503,7 @@ class LayoutEditor extends ApplicationV2 {
       this.render();
     });
     content.querySelector("[data-save]")?.addEventListener("click", async () => {
+      this.layout.v = LAYOUT_VERSION;
       await game.settings.set(ID, "layout", this.layout);
       const cap = Math.clamp(Number(content.querySelector("[data-purse-cap]")?.value) || 300, 10, 10000);
       if ( cap !== setting("purseCapacity") ) await game.settings.set(ID, "purseCapacity", cap);
@@ -1465,6 +1537,7 @@ Hooks.once("init", () => {
   reg("playersEquip", { name: "AID.Settings.PlayersEquip.Name", hint: "AID.Settings.PlayersEquip.Hint", type: Boolean, default: true, onChange: rerenderSheets });
   reg("strictSlots", { name: "AID.Settings.Strict.Name", hint: "AID.Settings.Strict.Hint", type: Boolean, default: true });
   reg("autoEquip", { name: "AID.Settings.AutoEquip.Name", hint: "AID.Settings.AutoEquip.Hint", type: Boolean, default: true });
+  reg("autoAttune", { name: "AID.Settings.Attune.Name", hint: "AID.Settings.Attune.Hint", type: Boolean, default: true });
   reg("hideWornInList", { name: "AID.Settings.HideWorn.Name", hint: "AID.Settings.HideWorn.Hint", type: Boolean, default: true, onChange: rerenderSheets });
   reg("purseEnabled", { name: "AID.Settings.Purse.Name", hint: "AID.Settings.Purse.Hint", type: Boolean, default: false, onChange: onPurseToggle });
   reg("purseCapacity", { name: "AID.Settings.PurseCap.Name", hint: "AID.Settings.PurseCap.Hint", type: Number, default: 300, range: { min: 10, max: 10000, step: 10 }, onChange: rerenderSheets });
@@ -1563,6 +1636,6 @@ Hooks.on("updateItem", (item, changes, options, userId) => {
   if ( act.secondary === item.id ) act.secondary = null;
   if ( setIds(sets).has(item.id) ) return commit(actor, { ...dollUpdate(d), ...setsUpdate(sets) }, []);
   const target = item.system.container ? null : primaryContainer(actor, d, item.id);
-  const updates = target ? [{ _id: item.id, "system.container": target }] : [];
+  const updates = [{ _id: item.id, _aidStow: true, ...(target ? { "system.container": target } : {}) }];
   return commit(actor, { ...dollUpdate(d), ...setsUpdate(sets) }, updates);
 });
