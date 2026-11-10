@@ -183,7 +183,7 @@
       "NoPurse": "No purse, coins are loose",
       "Loose": "No room in the purse, loose coins",
       "Stuff": "Put into purse",
-      "Overflow": "{n} coins did not fit into the purse and are carried loose.",
+      "Overflow": "The purse of {name} is full – {n} coins are lying in the inventory as a coin pile (Unstowed). Give it to someone else or make room.",
       "Full": "{purse} holds at most {cap} coins.",
       "Mark": "Use as purse",
       "Unmark": "No longer a purse",
@@ -192,7 +192,10 @@
       "Migrated": "Coins have been moved.",
       "Denoms": "Available coins",
       "ConvertAsk": "Some coin types were turned off. Convert those coins in all purses into the remaining types (e.g. 10 electrum → 5 gold)?",
-      "Converted": "Coins have been converted."
+      "Converted": "Coins have been converted.",
+      "PileName": "Coin pile",
+      "PileDesc": "Coins that did not fit into the purse. Click to put them into the purse, or give the pile to someone else.",
+      "StillFull": "The purse is still full – {n} coins remain in the coin pile."
     },
     "Attune": {
       "On": "Attuned",

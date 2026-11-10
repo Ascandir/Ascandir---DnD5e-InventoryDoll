@@ -183,7 +183,7 @@
       "NoPurse": "Keine Geldbörse, Münzen sind lose",
       "Loose": "Kein Platz in der Geldbörse, lose Münzen",
       "Stuff": "In Geldbörse packen",
-      "Overflow": "{n} Münzen passen nicht mehr in die Geldbörse und werden lose getragen.",
+      "Overflow": "Die Geldbörse von {name} ist voll – {n} Münzen liegen als Münzhaufen im Inventar (Nicht verstaut). Gib ihn jemand anderem oder schaffe Platz.",
       "Full": "In {purse} passen höchstens {cap} Münzen.",
       "Mark": "Als Geldbörse verwenden",
       "Unmark": "Keine Geldbörse mehr",
@@ -192,7 +192,10 @@
       "Migrated": "Münzen wurden umgelagert.",
       "Denoms": "Verfügbare Münzen",
       "ConvertAsk": "Einige Münzsorten wurden abgeschaltet. Sollen diese Münzen in allen Geldbörsen in die übrigen Sorten umgerechnet werden (z. B. 10 Elektrum → 5 Gold)?",
-      "Converted": "Münzen wurden umgerechnet."
+      "Converted": "Münzen wurden umgerechnet.",
+      "PileName": "Münzhaufen",
+      "PileDesc": "Münzen, die nicht mehr in die Geldbörse gepasst haben. Anklicken, um sie in die Geldbörse zu packen, oder den Haufen jemand anderem geben.",
+      "StillFull": "Die Geldbörse ist immer noch voll – {n} Münzen bleiben im Münzhaufen."
     },
     "Attune": {
       "On": "Eingestimmt",

@@ -327,6 +327,7 @@ const inCombat = actor => !!game.combat?.started && game.combat.combatants.some(
 /** Klick auf einen Gegenstand: Aktion auslösen, sonst Bogen öffnen. */
 function useItem(item, event) {
   if ( !item ) return;
+  if ( isCoinPile(item) && !(event?.ctrlKey || event?.metaKey) ) return openCoinPile(item);
   if ( event?.ctrlKey || event?.metaKey || !item.system.activities?.size ) return item.sheet.render(true);
   if ( !game.user.isGM && inCombat(item.parent) && !isReachable(item) ) return ui.notifications.warn(L("Warn.NotReachable", { item: item.name }));
   return item.use({ event });
@@ -649,7 +650,17 @@ async function applyCoinDelta(actor, delta) {
   }
   const purses = pursesOf(actor);
   const own = foundry.utils.deepClone(ownCoins(actor));
+  if ( !purses.length ) {
+    // Keine Geldbörse: Münzen als Münzhaufen ablegen statt sie unsichtbar zu verbuchen
+    const gain = Object.fromEntries(Object.entries(delta).filter(([, v]) => v > 0));
+    const loss = Object.fromEntries(Object.entries(delta).filter(([, v]) => v < 0));
+    for ( const [d, v] of Object.entries(loss) ) own[d] = Math.max(0, (Number(own[d]) || 0) + v);
+    if ( Object.keys(loss).length ) await actor.update({ "system.currency": own }, { aidPurse: true });
+    if ( coinCount(gain) ) await addToCoinPile(actor, gain, { notify: true });
+    return;
+  }
   const pc = new Map(purses.map(p => [p.id, foundry.utils.deepClone(p.system.currency ?? {})]));
+  const overflow = {};
   for ( const [d, raw] of Object.entries(delta) ) {
     let amount = Math.trunc(Number(raw) || 0);
     if ( amount > 0 ) {
@@ -661,7 +672,7 @@ async function applyCoinDelta(actor, delta) {
         amount -= put;
         if ( !amount ) break;
       }
-      own[d] = (Number(own[d]) || 0) + amount;
+      if ( amount ) overflow[d] = (overflow[d] ?? 0) + amount;
     } else if ( amount < 0 ) {
       let need = -amount;
       const fromOwn = Math.min(need, Number(own[d]) || 0);
@@ -679,8 +690,73 @@ async function applyCoinDelta(actor, delta) {
   const itemUpdates = purses.map(p => ({ _id: p.id, "system.currency": pc.get(p.id) }));
   if ( itemUpdates.length ) await actor.updateEmbeddedDocuments("Item", itemUpdates, { aid: true });
   await actor.update({ "system.currency": own }, { aidPurse: true });
-  const loose = coinCount(own);
-  if ( loose > 0 && purses.length ) ui.notifications.warn(L("Purse.Overflow", { n: loose }));
+  if ( coinCount(overflow) > 0 ) await addToCoinPile(actor, overflow, { notify: true });
+}
+
+/* ---------- Münzhaufen: Münzen, die nicht mehr in die Geldbörse passen ---------- */
+
+const isCoinPile = item => !!item?.getFlag(ID, "coinPile");
+const pileCoins = item => item?.getFlag(ID, "coinPile") ?? {};
+
+function pileLabel(cur) {
+  return DENOMS().filter(d => Number(cur[d]) > 0)
+    .map(d => `${cur[d]} ${game.i18n.localize(CONFIG.DND5E.currencies[d]?.abbreviation ?? d)}`).join(", ");
+}
+
+function pileData(cur) {
+  const count = coinCount(cur);
+  return {
+    name: `${L("Purse.PileName")} (${pileLabel(cur)})`,
+    "system.weight.value": Math.round((count / 50) * 100) / 100,
+    "system.description.value": `<p>${esc(L("Purse.PileDesc"))}</p><p><strong>${esc(pileLabel(cur))}</strong></p>`,
+    [`flags.${ID}.coinPile`]: cur
+  };
+}
+
+/** Münzen zum Münzhaufen des Charakters hinzufügen (legt ihn bei Bedarf an). */
+async function addToCoinPile(actor, coins, { notify = false } = {}) {
+  const pile = actor.items.find(isCoinPile);
+  const cur = foundry.utils.deepClone(pile ? pileCoins(pile) : {});
+  for ( const [d, n] of Object.entries(coins) ) cur[d] = (Number(cur[d]) || 0) + (Number(n) || 0);
+  const data = pileData(cur);
+  if ( pile ) await pile.update({ ...data, [`flags.${ID}.coinPile`]: cur }, { aid: true });
+  else {
+    await actor.createEmbeddedDocuments("Item", [foundry.utils.expandObject({
+      ...data, type: "loot", img: "icons/commodities/currency/coins-assorted-mix-copper-silver-gold.webp",
+      "system.quantity": 1, "system.container": null
+    })], { aid: true });
+  }
+  if ( notify ) ui.notifications.warn(L("Purse.Overflow", { n: coinCount(coins), name: actor.name }));
+}
+
+/** Münzhaufen in die Geldbörse(n) bzw. ohne Geldbörsen-Modus in die normale Währung übernehmen. */
+async function absorbCoinPile(actor, pile, { quiet = false } = {}) {
+  const coins = foundry.utils.deepClone(pileCoins(pile));
+  if ( !coinCount(coins) ) return pile.delete();
+  if ( !purseActive() ) {
+    const own = foundry.utils.deepClone(ownCoins(actor));
+    for ( const d of DENOMS() ) own[d] = (Number(own[d]) || 0) + (Number(coins[d]) || 0);
+    await actor.update({ "system.currency": own }, { aidPurse: true });
+    return pile.delete();
+  }
+  const purses = pursesOf(actor);
+  const updates = [];
+  for ( const p of purses ) {
+    const cur = foundry.utils.deepClone(p.system.currency ?? {});
+    let free = Math.max(0, purseCap(p) - coinCount(cur));
+    for ( const d of allowedDenoms() ) {
+      const put = Math.min(free, Number(coins[d]) || 0);
+      if ( !put ) continue;
+      cur[d] = (Number(cur[d]) || 0) + put;
+      coins[d] -= put;
+      free -= put;
+    }
+    updates.push({ _id: p.id, "system.currency": cur });
+  }
+  if ( updates.length ) await actor.updateEmbeddedDocuments("Item", updates, { aid: true });
+  if ( !coinCount(coins) ) return pile.delete();
+  await pile.update(pileData(coins), { aid: true });
+  if ( !quiet ) ui.notifications.warn(L("Purse.StillFull", { n: coinCount(coins) }));
 }
 
 /** Lose Münzen in die Geldbörsen packen (so viel Platz ist). */
@@ -694,6 +770,12 @@ async function stuffPurses(actor) {
   if ( !Object.keys(delta).length ) return;
   await actor.update({ "system.currency": { ...own, ...reset } }, { aidPurse: true });
   await applyCoinDelta(actor, delta);
+}
+
+/** Klick auf einen Münzhaufen: in die Geldbörse packen. */
+function openCoinPile(item) {
+  if ( !item?.parent?.isOwner ) return;
+  return absorbCoinPile(item.parent, item);
 }
 
 async function createPurse(actor) {
@@ -1949,6 +2031,14 @@ function queueCoinDelta(actor, delta) {
   coinQueue.set(actor.uuid, next);
   return next;
 }
+
+Hooks.on("createItem", (item, options, userId) => {
+  if ( (userId !== game.user.id) || options.aid || !isCoinPile(item) ) return;
+  const actor = item.parent;
+  if ( !(actor instanceof Actor) || (actor.type !== "character") || !setting("enabled") ) return;
+  if ( purseActive() && !pursesOf(actor).length ) return;
+  absorbCoinPile(actor, item, { quiet: true });
+});
 
 Hooks.on("renderCharacterActorSheet", (app, element) => {
   try {
