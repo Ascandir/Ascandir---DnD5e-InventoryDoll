@@ -18,9 +18,9 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": 
 
 /** Feste Ankerpunkte um das Porträt (Mittelpunkt in % der Figur-Fläche, Seitenverhältnis 4:5). */
 const ANCHORS = {
-  l0: { x: 11, y: 6 }, l1: { x: 11, y: 16 }, l2: { x: 11, y: 26 }, l3: { x: 11, y: 36 }, l4: { x: 11, y: 46 },
-  r0: { x: 89, y: 6 }, r1: { x: 89, y: 16 }, r2: { x: 89, y: 26 }, r3: { x: 89, y: 36 }, r4: { x: 89, y: 46 },
-  b0: { x: 22, y: 82 }, b1: { x: 36, y: 82 }, b2: { x: 50, y: 82 }, b3: { x: 64, y: 82 }, b4: { x: 78, y: 82 }
+  l0: { x: 11, y: 6 }, l1: { x: 11, y: 19 }, l2: { x: 11, y: 32 }, l3: { x: 11, y: 45 }, l4: { x: 11, y: 58 },
+  r0: { x: 89, y: 6 }, r1: { x: 89, y: 19 }, r2: { x: 89, y: 32 }, r3: { x: 89, y: 45 }, r4: { x: 89, y: 58 },
+  b0: { x: 30, y: 78 }, b1: { x: 38, y: 78 }, b2: { x: 50, y: 78 }, b3: { x: 62, y: 78 }, b4: { x: 70, y: 78 }
 };
 
 /** Slot-Typen mit Stichworten (EN + DE) für Wundersame Gegenstände ohne eigenen Ausrüstungstyp. */
@@ -42,6 +42,9 @@ const SLOT_TYPES = {
 };
 
 const LAYOUT_VERSION = 2;
+
+/** Feste Elemente (RK, Haupthand mit Set-Auswahl, Nebenhand) – vom SL verschiebbar. */
+const FIXED_DEFAULT = { ac: { x: 50, y: 92 }, main: { x: 14, y: 86 }, off: { x: 86, y: 86 } };
 const DEFAULT_LAYOUT = {
   v: LAYOUT_VERSION,
   containerSlots: 4,
@@ -58,6 +61,9 @@ const DEFAULT_LAYOUT = {
     { id: "trinket", anchor: "r4", type: "trinket", label: "" },
     { id: "ring1", anchor: "b1", type: "ring", label: "" },
     { id: "ring2", anchor: "b3", type: "ring", label: "" }
+  ],
+  fixed: {
+    ac: { x: 50, y: 92 }, main: { x: 14, y: 86 }, off: { x: 86, y: 86 }
   ]
 };
 
@@ -86,6 +92,12 @@ function getLayout() {
   }
   l.slots = l.slots.filter(s => s && (s.type in SLOT_TYPES)).map(withPosition).filter(Boolean);
   l.containerSlots = Math.clamp(Number(l.containerSlots) || 4, 1, 8);
+  l.fixed ??= {};
+  for ( const [k, def] of Object.entries(FIXED_DEFAULT) ) {
+    const f = l.fixed[k];
+    l.fixed[k] = (Number.isFinite(f?.x) && Number.isFinite(f?.y))
+      ? { x: Math.clamp(f.x, 4, 96), y: Math.clamp(f.y, 4, 96) } : { ...def };
+  }
   return l;
 }
 
@@ -827,16 +839,19 @@ function renderSlot(actor, slot, d, editable) {
 }
 
 function renderHands(actor, editable) {
+  const fixed = getLayout().fixed;
   const data = getSets(actor);
   const set = data.sets[data.active];
   const main = actor.items.get(set.primary);
   const off = actor.items.get(set.secondary);
   const two = isTwoHanded(main);
-  const hand = (which, item, ghost = false) => {
+  const hand = (which, item, ghost = false, extra = "") => {
     const label = L(which === "primary" ? "Sets.Main" : "Sets.Off");
     const real = item && !ghost;
-    return `<div class="aid-hand ${which} ${item ? "filled" : "empty"} ${ghost ? "ghost" : ""}" data-aid-drop="weapon" data-set="${data.active}" data-which="${which}"
+    const pos = fixed[which === "primary" ? "main" : "off"];
+    return `<div class="aid-hand ${which} ${item ? "filled" : "empty"} ${ghost ? "ghost" : ""}" style="left:${pos.x}%;top:${pos.y}%" data-aid-drop="weapon" data-set="${data.active}" data-which="${which}"
         ${real ? `data-aid-item="${item.id}" ${tipAttrs(item, which === "primary" ? "RIGHT" : "LEFT")}` : `data-tooltip="${esc(label)}"`} ${real && editable ? "draggable=\"true\"" : ""}>
+        ${extra}
         <span class="aid-label">${esc(label.toUpperCase())}</span>
         <div class="aid-tile big">${item ? img(item.img, item.name) : ""}${ghost ? `<span class="aid-2h">${esc(L("Sets.TwoHandedShort"))}</span>` : ""}${real ? attuneBadge(item) : ""}</div>
         <span class="aid-hname">${item ? esc(item.name) : ""}</span>
@@ -849,8 +864,7 @@ function renderHands(actor, editable) {
     return `<button type="button" class="aid-setpill ${data.active === n ? "active" : ""}" data-aid-set="${n}" data-aid-drop="setpill" data-set="${n}"
         data-tooltip="${esc(`${L("Sets.Title")} ${nums[n]}: ${names}`)}">${nums[n]}</button>`;
   }).join("");
-  return `${hand("primary", main)}${hand("secondary", two ? main : off, two)}
-    <div class="aid-setbar"><div class="aid-setpills">${pills}</div><span class="aid-setnote">${esc(L(hudActive() ? "Sets.SyncedHud" : "Sets.Own"))}</span></div>`;
+  return `${hand("primary", main, false, `<div class="aid-setpills">${pills}</div>`)}${hand("secondary", two ? main : off, two)}`;
 }
 
 function ammoSelect(actor, container, d) {
@@ -902,7 +916,7 @@ function renderDoll(app, actor) {
         <header class="aid-header"><h3>${esc(L("Doll.Title"))}</h3>${auto}${gear}</header>
         <div class="aid-figure">
           <div class="aid-portrait">${img(actor.img, actor.name)}</div>
-          <div class="aid-ac" data-tooltip="${esc(L("Doll.AC"))}"><span>${esc(L("Doll.ACShort"))}</span><strong>${esc(ac)}</strong></div>
+          <div class="aid-ac" style="left:${layout.fixed.ac.x}%;top:${layout.fixed.ac.y}%" data-tooltip="${esc(L("Doll.AC"))}"><span>${esc(L("Doll.ACShort"))}</span><strong>${esc(ac)}</strong></div>
           ${slots}
           ${renderHands(actor, editable)}
         </div>
@@ -1391,9 +1405,9 @@ class LayoutEditor extends ApplicationV2 {
     return `<div class="aid-ed">
         <div class="aid-ed-figure" data-figure>
           <div class="aid-ed-portrait"><i class="fa-solid fa-user" inert></i></div>
-          <div class="aid-ed-fixed hand off">${esc(L("Sets.Off"))}</div>
-          <div class="aid-ed-fixed hand main">${esc(L("Sets.Main"))}</div>
-          <div class="aid-ed-fixed sets">I · II · III</div>
+          <div class="aid-ed-fixed hand" data-fixed="main" style="left:${lay.fixed.main.x}%;top:${lay.fixed.main.y}%" data-tooltip="${esc(L("Editor.MoveHint"))}"><span class="aid-ed-sets">I · II · III</span>${esc(L("Sets.Main"))}</div>
+          <div class="aid-ed-fixed hand" data-fixed="off" style="left:${lay.fixed.off.x}%;top:${lay.fixed.off.y}%" data-tooltip="${esc(L("Editor.MoveHint"))}">${esc(L("Sets.Off"))}</div>
+          <div class="aid-ed-fixed ac" data-fixed="ac" style="left:${lay.fixed.ac.x}%;top:${lay.fixed.ac.y}%" data-tooltip="${esc(L("Editor.MoveHint"))}">${esc(L("Doll.ACShort"))}</div>
           ${anchors}
         </div>
         <div class="aid-ed-side">
@@ -1440,6 +1454,33 @@ class LayoutEditor extends ApplicationV2 {
       const p = pct(ev);
       addAt(p.x, p.y);
     });
+    // Feste Elemente (Hände, RK) verschieben
+    content.querySelectorAll("[data-fixed]").forEach(el => {
+      el.addEventListener("pointerdown", ev => {
+        if ( ev.button !== 0 ) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        const pos = this.layout.fixed[el.dataset.fixed];
+        el.setPointerCapture(ev.pointerId);
+        const move = e => {
+          const p = pct(e);
+          pos.x = Math.round(Math.clamp(p.x, 4, 96));
+          pos.y = Math.round(Math.clamp(p.y, 4, 96));
+          el.style.left = `${pos.x}%`;
+          el.style.top = `${pos.y}%`;
+        };
+        const up = () => {
+          el.removeEventListener("pointermove", move);
+          el.removeEventListener("pointerup", up);
+          el.removeEventListener("pointercancel", up);
+        };
+        el.addEventListener("pointermove", move);
+        el.addEventListener("pointerup", up);
+        el.addEventListener("pointercancel", up);
+      });
+      el.addEventListener("click", ev => ev.stopPropagation());
+    });
+
     // Slots anklicken = auswählen, ziehen = verschieben
     content.querySelectorAll("[data-select]").forEach(b => {
       b.addEventListener("pointerdown", ev => {

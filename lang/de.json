@@ -104,11 +104,12 @@
       "Fixed": "Feste Bereiche",
       "WeaponSets": "Waffensets (Combat-HUD-Quickslots)",
       "ContainerSlots": "Behälter-Slots",
-      "Hint": "Irgendwo auf die Figur klicken legt dort einen Slot an (oder ein + nutzen). Slots lassen sich mit der Maus verschieben. Jeder Typ darf mehrfach vorkommen. Wundersame Gegenstände werden am Namen erkannt; klappt das nicht, beim Ablegen auf den Slot die Umschalttaste halten.",
+      "Hint": "Irgendwo auf die Figur klicken legt dort einen Slot an (oder ein + nutzen). Slots lassen sich mit der Maus verschieben. Jeder Typ darf mehrfach vorkommen. Wundersame Gegenstände werden am Namen erkannt; klappt das nicht, beim Ablegen auf den Slot die Umschalttaste halten. Hände und Rüstungsklasse lassen sich ebenfalls verschieben.",
       "Reset": "Standard",
       "Save": "Layout speichern",
       "Saved": "Paperdoll-Layout gespeichert.",
-      "AllSettings": "Alle Moduleinstellungen"
+      "AllSettings": "Alle Moduleinstellungen",
+      "MoveHint": "Zum Verschieben ziehen"
     },
     "Settings": {
       "Editor": {

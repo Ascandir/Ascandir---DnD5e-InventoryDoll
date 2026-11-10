@@ -441,3 +441,17 @@
 .aid-figure .aid-hand .aid-label { color: var(--dnd5e-color-gold); }
 .aid-figure .aid-setpill:not(.active) { background: rgba(0, 0, 0, .55); color: #f0ebe0; }
 .aid-ed-portrait { left: 0; width: 100%; top: 0; height: 100%; border: none; }
+
+/* ---------- v0.2.3: verschiebbare Elemente, Set-Auswahl über der Haupthand ---------- */
+.aid-figure .aid-ac { transform: translate(-50%, -50%); }
+.aid-hand { transform: translate(-50%, -50%); }
+.aid-setpills { display: flex; gap: 3px; margin-bottom: 2px; }
+.aid-setpill {
+  width: 26px; height: 20px; min-height: 0; padding: 0; line-height: 18px;
+  font-size: 11px;
+}
+.aid-ed-fixed { cursor: grab; touch-action: none; flex-direction: column; gap: 2px; z-index: 1; background: rgba(0,0,0,.35); }
+.aid-ed-fixed:active { cursor: grabbing; }
+.aid-ed-fixed.hand { width: 64px; height: 64px; }
+.aid-ed-fixed.ac { width: 44px; height: 50px; border-radius: 6px 6px 22px 22px; font-weight: bold; }
+.aid-ed-sets { font-size: 9px; color: var(--dnd5e-color-gold, #9f9275); }

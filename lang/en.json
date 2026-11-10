@@ -104,11 +104,12 @@
       "Fixed": "Fixed areas",
       "WeaponSets": "Weapon sets (Combat HUD quickslots)",
       "ContainerSlots": "Container slots",
-      "Hint": "Click anywhere on the figure to add a slot there (or use a +). Drag slots to move them. Any type may be used several times. Wondrous items are recognized by name; if that fails, hold Shift while dropping it on the slot.",
+      "Hint": "Click anywhere on the figure to add a slot there (or use a +). Drag slots to move them. Any type may be used several times. Wondrous items are recognized by name; if that fails, hold Shift while dropping it on the slot. Hands and armor class can be moved too.",
       "Reset": "Default",
       "Save": "Save layout",
       "Saved": "Paperdoll layout saved.",
-      "AllSettings": "All module settings"
+      "AllSettings": "All module settings",
+      "MoveHint": "Drag to move"
     },
     "Settings": {
       "Editor": {
