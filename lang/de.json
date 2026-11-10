@@ -167,6 +167,11 @@
         "Outline": "Helles Symbol mit dunkler Kontur",
         "Glass": "Milchglas hinter dem Feld",
         "None": "Keine (nur transparent)"
+      },
+      "Colors": {
+        "Name": "Symbolfarben der Paperdoll",
+        "Label": "Farben wählen",
+        "Hint": "Jeder Spieler wählt pro Charakter die Farbe der Symbole in leeren Paperdoll-Feldern."
       }
     },
     "Purse": {
@@ -189,6 +194,15 @@
     "Attune": {
       "On": "Eingestimmt",
       "Off": "Einstimmung nötig – nicht eingestimmt"
+    },
+    "Colors": {
+      "Title": "Symbolfarben der Paperdoll",
+      "Button": "Symbolfarbe",
+      "Hint": "Wähle für jeden deiner Charaktere die Farbe der Symbole in leeren Feldern, damit sie sich vom Porträt abheben. Nur du siehst deine Auswahl.",
+      "Default": "Standard für alle meine Charaktere",
+      "Presets": "Schnellauswahl",
+      "UseDefault": "Standard verwenden",
+      "NoActors": "Dir gehören keine Charaktere."
     }
   }
 }

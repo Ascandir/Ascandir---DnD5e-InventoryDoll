@@ -167,6 +167,11 @@
         "Outline": "Light icon with dark outline",
         "Glass": "Frosted glass behind the slot",
         "None": "None (transparent only)"
+      },
+      "Colors": {
+        "Name": "Paperdoll icon colours",
+        "Label": "Choose colours",
+        "Hint": "Each player picks the icon colour of empty paperdoll slots per character."
       }
     },
     "Purse": {
@@ -189,6 +194,15 @@
     "Attune": {
       "On": "Attuned",
       "Off": "Requires attunement – not attuned"
+    },
+    "Colors": {
+      "Title": "Paperdoll icon colours",
+      "Button": "Icon colour",
+      "Hint": "Pick the colour of the empty-slot icons for each of your characters, so they stand out against the portrait. Only you see your choice.",
+      "Default": "Default for all my characters",
+      "Presets": "Quick pick",
+      "UseDefault": "Use default",
+      "NoActors": "You do not own any characters."
     }
   }
 }

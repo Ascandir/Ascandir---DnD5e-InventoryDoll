@@ -60,6 +60,13 @@ const ICON_CHOICES = [
 ];
 const cleanIcon = v => String(v ?? "").toLowerCase().split(/\s+/).filter(c => /^fa-[a-z0-9-]+$/.test(c) && !["fa-solid", "fa-regular", "fa-brands"].includes(c))[0] ?? "";
 
+/** Symbolfarbe, die dieser Spieler für den Charakter gewählt hat (oder sein Standard). */
+function iconColor(actor) {
+  const map = game.user.getFlag(ID, "iconColors") ?? {};
+  const c = map[actor?.id] || setting("iconColorDefault") || "#fff4d6";
+  return /^#[0-9a-f]{6}$/i.test(c) ? c : "#fff4d6";
+}
+
 /** Symbol eines Feldes: eigenes Bild, eigenes Font-Awesome-Symbol oder Standard des Typs. */
 function slotIcon(slot) {
   if ( slot.iconImg ) return `<img class="aid-slot-icon aid-slot-img" src="${esc(slot.iconImg)}" alt="" draggable="false">`;
@@ -932,9 +939,11 @@ function renderDoll(app, actor) {
     ? `<button type="button" class="aid-auto" data-aid-auto data-tooltip="${esc(L("Doll.AutoFillHint"))}" aria-label="${esc(L("Doll.AutoFill"))}"><i class="fa-solid fa-wand-magic-sparkles" inert></i></button>` : "";
   const gear = (game.user.isGM && app.isEditMode)
     ? `<button type="button" class="aid-auto" data-aid-config data-tooltip="${esc(L("Doll.Config"))}" aria-label="${esc(L("Doll.Config"))}"><i class="fa-solid fa-gear" inert></i></button>` : "";
-  return `<aside class="aid-doll ${editable ? "editable" : "locked"} aid-hl-${esc(setting("emptyHighlight"))}">
+  const palette = actor.isOwner
+    ? `<button type="button" class="aid-auto" data-aid-colors data-tooltip="${esc(L("Colors.Button"))}" aria-label="${esc(L("Colors.Button"))}"><i class="fa-solid fa-palette" inert></i></button>` : "";
+  return `<aside class="aid-doll ${editable ? "editable" : "locked"} aid-hl-${esc(setting("emptyHighlight"))}" style="--aid-icon-color:${iconColor(actor)}">
       <section class="aid-card">
-        <header class="aid-header"><h3>${esc(L("Doll.Title"))}</h3>${auto}${gear}</header>
+        <header class="aid-header"><h3>${esc(L("Doll.Title"))}</h3>${palette}${auto}${gear}</header>
         <div class="aid-figure">
           <div class="aid-portrait">${img(actor.img, actor.name)}</div>
           <div class="aid-ac" style="left:${layout.fixed.ac.x}%;top:${layout.fixed.ac.y}%" data-tooltip="${esc(L("Doll.AC"))}"><span>${esc(L("Doll.ACShort"))}</span><strong>${esc(ac)}</strong></div>
@@ -1151,6 +1160,12 @@ function bindDoll(app, actor, aside) {
     ev.stopPropagation();
     if ( editable || actor.isOwner ) switchSet(actor, b.dataset.aidSet);
   }));
+
+  aside.querySelector("[data-aid-colors]")?.addEventListener("click", ev => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    new IconColorMenu({ focusActor: actor.id }).render({ force: true });
+  });
 
   aside.querySelector("[data-aid-config]")?.addEventListener("click", ev => {
     ev.preventDefault();
@@ -1619,6 +1634,75 @@ class LayoutEditor extends ApplicationV2 {
 }
 
 /* -------------------------------------------- */
+/*  Symbolfarben (pro Spieler und Charakter)    */
+/* -------------------------------------------- */
+
+class IconColorMenu extends ApplicationV2 {
+  static DEFAULT_OPTIONS = {
+    id: "aid-icon-colors",
+    classes: ["aid-colors", "dnd5e2"],
+    window: { title: "AID.Colors.Title", icon: "fa-solid fa-palette" },
+    position: { width: 440, height: "auto" }
+  };
+
+  constructor(options = {}) {
+    super(options);
+    this.focusActor = options.focusActor ?? null;
+    this.colors = foundry.utils.deepClone(game.user.getFlag(ID, "iconColors") ?? {});
+    this.fallback = setting("iconColorDefault") || "#fff4d6";
+  }
+
+  async _renderHTML() {
+    const actors = game.actors.filter(a => (a.type === "character") && a.isOwner)
+      .sort((a, b) => (b.id === this.focusActor) - (a.id === this.focusActor) || a.name.localeCompare(b.name));
+    const rows = actors.map(a => {
+      const c = this.colors[a.id] || "";
+      return `<div class="aid-color-row ${a.id === this.focusActor ? "focus" : ""}">
+          <img src="${esc(a.img)}" alt="" draggable="false"><span class="aid-color-name">${esc(a.name)}</span>
+          <input type="color" value="${esc(c || this.fallback)}" data-actor="${a.id}" aria-label="${esc(a.name)}">
+          <button type="button" data-reset="${a.id}" ${c ? "" : "disabled"} data-tooltip="${esc(L("Colors.UseDefault"))}" aria-label="${esc(L("Colors.UseDefault"))}"><i class="fa-solid fa-rotate-left" inert></i></button>
+        </div>`;
+    }).join("") || `<p class="aid-ed-hint">${esc(L("Colors.NoActors"))}</p>`;
+    const presets = ["#fff4d6", "#ffffff", "#c8b48c", "#1b1c20", "#e04848", "#4cc3ff", "#7bdc6b", "#c07bff"]
+      .map(c => `<button type="button" class="aid-swatch" style="background:${c}" data-preset="${c}" aria-label="${c}"></button>`).join("");
+    return `<div class="aid-colors-body">
+        <p class="aid-ed-hint">${esc(L("Colors.Hint"))}</p>
+        <div class="aid-color-row default"><span class="aid-color-name">${esc(L("Colors.Default"))}</span>
+          <input type="color" value="${esc(this.fallback)}" data-default aria-label="${esc(L("Colors.Default"))}"></div>
+        <div class="aid-swatches"><span>${esc(L("Colors.Presets"))}</span>${presets}</div>
+        ${rows}
+        <div class="aid-ed-buttons"><button type="button" class="bright" data-save><i class="fa-solid fa-floppy-disk" inert></i> ${esc(L("Editor.Save"))}</button></div>
+      </div>`;
+  }
+
+  _replaceHTML(result, content) {
+    content.innerHTML = result;
+    let last = content.querySelector(".aid-color-row.focus input[type=color]") ?? null;
+    content.querySelectorAll("input[type=color][data-actor]").forEach(i => {
+      i.addEventListener("focus", () => { last = i; });
+      i.addEventListener("input", () => { this.colors[i.dataset.actor] = i.value; last = i; });
+    });
+    content.querySelector("[data-default]")?.addEventListener("input", ev => { this.fallback = ev.currentTarget.value; });
+    content.querySelectorAll("[data-preset]").forEach(b => b.addEventListener("click", () => {
+      const target = last ?? content.querySelector("[data-default]");
+      target.value = b.dataset.preset;
+      target.dispatchEvent(new Event("input"));
+    }));
+    content.querySelectorAll("[data-reset]").forEach(b => b.addEventListener("click", () => {
+      delete this.colors[b.dataset.reset];
+      this.render();
+    }));
+    content.querySelector("[data-save]")?.addEventListener("click", async () => {
+      await game.settings.set(ID, "iconColorDefault", this.fallback);
+      await game.user.unsetFlag(ID, "iconColors");
+      await game.user.setFlag(ID, "iconColors", this.colors);
+      rerenderSheets();
+      this.close();
+    });
+  }
+}
+
+/* -------------------------------------------- */
 /*  Hooks                                       */
 /* -------------------------------------------- */
 
@@ -1635,6 +1719,11 @@ Hooks.once("init", () => {
     name: "AID.Settings.Editor.Name", label: "AID.Settings.Editor.Label", hint: "AID.Settings.Editor.Hint",
     icon: "fa-solid fa-person-rays", type: LayoutEditor, restricted: true
   });
+  game.settings.registerMenu(ID, "iconColors", {
+    name: "AID.Settings.Colors.Name", label: "AID.Settings.Colors.Label", hint: "AID.Settings.Colors.Hint",
+    icon: "fa-solid fa-palette", type: IconColorMenu, restricted: false
+  });
+  game.settings.register(ID, "iconColorDefault", { scope: "client", config: false, type: String, default: "#fff4d6", onChange: rerenderSheets });
   reg("enabled", { name: "AID.Settings.Enabled.Name", hint: "AID.Settings.Enabled.Hint", type: Boolean, default: true, onChange: rerenderSheets });
   reg("hideSidebar", { name: "AID.Settings.HideSidebar.Name", hint: "AID.Settings.HideSidebar.Hint", type: Boolean, default: true, onChange: rerenderSheets });
   reg("playersEquip", { name: "AID.Settings.PlayersEquip.Name", hint: "AID.Settings.PlayersEquip.Hint", type: Boolean, default: true, onChange: rerenderSheets });

@@ -586,3 +586,21 @@
 }
 /* Set-Knöpfe und RK ebenfalls mit Kontur */
 .aid-doll:not(.aid-hl-none) .aid-figure .aid-setpill { box-shadow: 0 0 0 1px rgba(0, 0, 0, .55); }
+
+/* ---------- v0.2.11: Symbolfarbe pro Spieler/Charakter ---------- */
+.aid-doll .aid-figure .aid-slot-icon { color: var(--aid-icon-color, #fff4d6) !important; }
+.aid-doll:not(.aid-hl-none) .aid-figure .aid-slot.empty .aid-tile,
+.aid-doll:not(.aid-hl-none) .aid-figure .aid-hand.empty .aid-tile {
+  border-color: color-mix(in srgb, var(--aid-icon-color, #fff4d6) 85%, transparent);
+}
+.aid-colors-body { display: flex; flex-direction: column; gap: 8px; padding: 4px; }
+.aid-color-row { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 4px; }
+.aid-color-row.focus { outline: 1px solid var(--dnd5e-color-gold, #9f9275); }
+.aid-color-row.default { border-bottom: 1px solid rgba(127,127,127,.4); padding-bottom: 8px; }
+.aid-color-row img { width: 32px; height: 32px; object-fit: cover; object-position: top; border-radius: 3px; border: none; }
+.aid-color-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.aid-color-row input[type=color] { width: 44px; height: 28px; padding: 0; border: none; background: none; flex: none; }
+.aid-color-row button { width: 30px; height: 28px; min-height: 0; padding: 0; flex: none; }
+.aid-swatches { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-size: 12px; }
+.aid-swatches > span { margin-right: 4px; opacity: .8; }
+.aid-swatch { width: 22px; height: 22px; min-height: 0; padding: 0; border-radius: 50%; border: 1px solid rgba(127,127,127,.7); }
