@@ -1590,6 +1590,18 @@ function inject(app, element) {
   }
   hideWornRows(actor, tab);
   bindSearch(tab);
+  // Münzhaufen in der normalen Liste: Klick packt ihn in die Geldbörse
+  for ( const li of tab.querySelectorAll(".inventory-element .items-list li.item[data-item-id]") ) {
+    const pile = actor.items.get(li.dataset.itemId);
+    if ( !isCoinPile(pile) ) continue;
+    li.classList.add("aid-coinpile");
+    li.querySelector(".item-name")?.addEventListener("click", ev => {
+      if ( ev.ctrlKey || ev.metaKey ) return;
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      openCoinPile(pile);
+    }, { capture: true });
+  }
 
   if ( setting("hideSidebar") && (app.tabGroups?.primary === "inventory") ) app._toggleSidebar?.(true);
 }
