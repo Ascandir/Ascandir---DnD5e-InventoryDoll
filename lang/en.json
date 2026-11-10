@@ -1,0 +1,114 @@
+{
+  "AID": {
+    "Type": {
+      "head": "Head",
+      "eyes": "Eyes",
+      "neck": "Neck",
+      "shoulders": "Cloak",
+      "armor": "Armor",
+      "clothing": "Clothing",
+      "wrists": "Wrists",
+      "hands": "Hands",
+      "waist": "Waist",
+      "feet": "Feet",
+      "ring": "Ring",
+      "trinket": "Trinket",
+      "focus": "Focus",
+      "any": "Wondrous"
+    },
+    "TypeHint": {
+      "head": "Helmets, hats, circlets, crowns, headbands.",
+      "eyes": "Goggles, lenses, eyepatches.",
+      "neck": "Amulets, necklaces, periapts, medallions, brooches.",
+      "shoulders": "Cloaks, capes, mantles.",
+      "armor": "Light, medium, heavy and natural armor (dnd5e armor type).",
+      "clothing": "Clothing, robes, vestments.",
+      "wrists": "Bracers, bracelets.",
+      "hands": "Gloves, gauntlets.",
+      "waist": "Belts, girdles, sashes.",
+      "feet": "Boots, slippers, shoes.",
+      "ring": "Rings (dnd5e equipment type Ring).",
+      "trinket": "Trinkets, ioun stones, figurines.",
+      "focus": "Spellcasting foci, rods, wands, staffs with the Focus property.",
+      "any": "Any wondrous item, trinket, ring or piece of clothing."
+    },
+    "Doll": {
+      "Title": "Equipped",
+      "AC": "Armor Class",
+      "ACShort": "AC",
+      "AutoFill": "Sort in equipped items",
+      "AutoFillHint": "Put already equipped items into matching slots and attach containers"
+    },
+    "Sets": {
+      "Title": "Weapon Sets",
+      "SyncedHud": "Synced with Combat HUD",
+      "Own": "Quickslots",
+      "Main": "Main hand",
+      "Off": "Off hand",
+      "TwoHanded": "Two-handed",
+      "Activate": "Activate weapon set"
+    },
+    "Containers": {
+      "Title": "Containers",
+      "Hint": "★ Unequipped items go here",
+      "Primary": "Primary",
+      "Drop": "Drop container",
+      "Empty": "Empty",
+      "Detached": "Not attached",
+      "Unstowed": "Unstowed"
+    },
+    "Ammo": {
+      "Label": "Active ammunition",
+      "None": "— Ammunition —"
+    },
+    "Row": {
+      "Use": "Use",
+      "More": "More actions",
+      "Weight": "Weight",
+      "Quantity": "Quantity",
+      "Uses": "Uses"
+    },
+    "Ground": {
+      "Zone": "Drop here to place on the ground",
+      "Title": "Place on the ground",
+      "HowMany": "How many {item} do you want to drop?",
+      "Drop": "Drop"
+    },
+    "Warn": {
+      "WrongSlot": "{item} does not fit into the slot {slot}. (GM: hold Shift to assign anyway.)",
+      "NotContainer": "{item} is not a container.",
+      "NotWeapon": "{item} cannot be held in this hand.",
+      "ContainerNotEmpty": "Empty the container before dropping it on the ground.",
+      "NoToken": "Your character needs a token on the current scene.",
+      "NoGM": "A GM must be online to drop items on the ground."
+    },
+    "Info": {
+      "AutoFilled": "Equipped items have been sorted in."
+    },
+    "Editor": {
+      "Title": "Paperdoll Layout (all characters)",
+      "Add": "Add slot here",
+      "Selected": "Selected slot",
+      "SlotType": "Slot type",
+      "Label": "Label on the sheet",
+      "Remove": "Remove slot",
+      "NoSelection": "Click a slot to edit it, or a + to add a new one.",
+      "Fixed": "Fixed areas",
+      "WeaponSets": "Weapon sets (Combat HUD quickslots)",
+      "ContainerSlots": "Container slots",
+      "Hint": "Wondrous items have no slot type in dnd5e. They are recognized by name (e.g. Cloak, Boots, Ring). If that fails, hold Shift while dropping it on the slot: the item remembers the slot type.",
+      "Reset": "Default",
+      "Save": "Save layout",
+      "Saved": "Paperdoll layout saved."
+    },
+    "Settings": {
+      "Editor": { "Name": "Paperdoll layout", "Label": "Edit slots", "Hint": "Add, remove and type the equipment slots of the paperdoll for all characters." },
+      "Enabled": { "Name": "Replace inventory tab", "Hint": "Show the paperdoll inventory on character sheets." },
+      "HideSidebar": { "Name": "Hide sidebar on the inventory tab", "Hint": "The portrait moves into the paperdoll; other tabs keep the sidebar." },
+      "PlayersEquip": { "Name": "Players may equip", "Hint": "If disabled, only the GM can change the paperdoll." },
+      "Strict": { "Name": "Strict slot types", "Hint": "Only allow items that match the slot type." },
+      "HideWorn": { "Name": "Hide worn items from the list", "Hint": "Items on the paperdoll, in weapon sets and attached containers are not repeated in the item list." },
+      "Ground": { "Name": "Allow dropping on the ground", "Hint": "Needs Ascandir - DnD5e Lootplacement or Item Piles." }
+    }
+  }
+}

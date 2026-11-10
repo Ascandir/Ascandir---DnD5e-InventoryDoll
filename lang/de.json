@@ -1,0 +1,114 @@
+{
+  "AID": {
+    "Type": {
+      "head": "Kopf",
+      "eyes": "Augen",
+      "neck": "Hals",
+      "shoulders": "Umhang",
+      "armor": "Rüstung",
+      "clothing": "Kleidung",
+      "wrists": "Handgelenke",
+      "hands": "Hände",
+      "waist": "Gürtel",
+      "feet": "Füße",
+      "ring": "Ring",
+      "trinket": "Schmuckstück",
+      "focus": "Fokus",
+      "any": "Wundersam"
+    },
+    "TypeHint": {
+      "head": "Helme, Hüte, Reife, Kronen, Stirnbänder.",
+      "eyes": "Brillen, Linsen, Augenklappen.",
+      "neck": "Amulette, Halsketten, Medaillons, Broschen.",
+      "shoulders": "Umhänge, Capes, Mäntel.",
+      "armor": "Leichte, mittlere, schwere und natürliche Rüstung (dnd5e-Rüstungstyp).",
+      "clothing": "Kleidung, Roben, Gewänder.",
+      "wrists": "Armschienen, Armreife.",
+      "hands": "Handschuhe, Panzerhandschuhe.",
+      "waist": "Gürtel, Schärpen.",
+      "feet": "Stiefel, Schuhe, Pantoffeln.",
+      "ring": "Ringe (dnd5e-Ausrüstungstyp Ring).",
+      "trinket": "Schmuckstücke, Ioun-Steine, Figuren.",
+      "focus": "Zauberfoki, Zepter, Zauberstäbe, Stäbe mit der Eigenschaft Fokus.",
+      "any": "Jeder wundersame Gegenstand, jedes Schmuckstück, jeder Ring und jede Kleidung."
+    },
+    "Doll": {
+      "Title": "Ausgerüstet",
+      "AC": "Rüstungsklasse",
+      "ACShort": "RK",
+      "AutoFill": "Ausgerüstetes einsortieren",
+      "AutoFillHint": "Bereits ausgerüstete Gegenstände in passende Slots legen und Behälter anbinden"
+    },
+    "Sets": {
+      "Title": "Waffensets",
+      "SyncedHud": "Mit Combat HUD verbunden",
+      "Own": "Quickslots",
+      "Main": "Haupthand",
+      "Off": "Nebenhand",
+      "TwoHanded": "Zweihändig",
+      "Activate": "Waffenset aktivieren"
+    },
+    "Containers": {
+      "Title": "Behälter",
+      "Hint": "★ Abgelegtes landet hier",
+      "Primary": "Primär",
+      "Drop": "Behälter hierher",
+      "Empty": "Leer",
+      "Detached": "Nicht angelegt",
+      "Unstowed": "Nicht verstaut"
+    },
+    "Ammo": {
+      "Label": "Aktive Munition",
+      "None": "— Munition —"
+    },
+    "Row": {
+      "Use": "Nutzen",
+      "More": "Weitere Aktionen",
+      "Weight": "Gewicht",
+      "Quantity": "Menge",
+      "Uses": "Nutzung"
+    },
+    "Ground": {
+      "Zone": "Hierher ziehen = auf den Boden legen",
+      "Title": "Auf den Boden legen",
+      "HowMany": "Wie viele {item} willst du ablegen?",
+      "Drop": "Ablegen"
+    },
+    "Warn": {
+      "WrongSlot": "{item} passt nicht in den Slot {slot}. (SL: Mit gedrückter Umschalttaste trotzdem zuweisen.)",
+      "NotContainer": "{item} ist kein Behälter.",
+      "NotWeapon": "{item} kann nicht in dieser Hand geführt werden.",
+      "ContainerNotEmpty": "Leere den Behälter, bevor du ihn auf den Boden legst.",
+      "NoToken": "Dein Charakter braucht einen Token in der aktuellen Szene.",
+      "NoGM": "Zum Ablegen auf den Boden muss ein SL online sein."
+    },
+    "Info": {
+      "AutoFilled": "Ausgerüstete Gegenstände wurden einsortiert."
+    },
+    "Editor": {
+      "Title": "Paperdoll-Layout (alle Charaktere)",
+      "Add": "Hier Slot hinzufügen",
+      "Selected": "Ausgewählter Slot",
+      "SlotType": "Slot-Typ",
+      "Label": "Beschriftung im Bogen",
+      "Remove": "Slot entfernen",
+      "NoSelection": "Klicke einen Slot zum Bearbeiten an oder ein + für einen neuen.",
+      "Fixed": "Feste Bereiche",
+      "WeaponSets": "Waffensets (Combat-HUD-Quickslots)",
+      "ContainerSlots": "Behälter-Slots",
+      "Hint": "Wundersame Gegenstände haben in dnd5e keinen Slot-Typ. Sie werden am Namen erkannt (z. B. Umhang, Stiefel, Ring). Klappt das nicht, halte beim Ablegen auf den Slot die Umschalttaste gedrückt: Der Gegenstand merkt sich den Slot-Typ.",
+      "Reset": "Standard",
+      "Save": "Layout speichern",
+      "Saved": "Paperdoll-Layout gespeichert."
+    },
+    "Settings": {
+      "Editor": { "Name": "Paperdoll-Layout", "Label": "Slots bearbeiten", "Hint": "Ausrüstungs-Slots der Paperdoll für alle Charaktere hinzufügen, entfernen und mit einem Typ versehen." },
+      "Enabled": { "Name": "Inventar-Reiter ersetzen", "Hint": "Paperdoll-Inventar in Charakterbögen anzeigen." },
+      "HideSidebar": { "Name": "Seitenleiste im Inventar ausblenden", "Hint": "Das Porträt wandert in die Paperdoll; andere Reiter behalten die Seitenleiste." },
+      "PlayersEquip": { "Name": "Spieler dürfen ausrüsten", "Hint": "Ist das aus, kann nur der SL die Paperdoll ändern." },
+      "Strict": { "Name": "Slot-Typen streng prüfen", "Hint": "Nur Gegenstände zulassen, die zum Slot-Typ passen." },
+      "HideWorn": { "Name": "Getragenes in der Liste ausblenden", "Hint": "Gegenstände auf der Paperdoll, in Waffensets und angelegten Behältern erscheinen nicht noch einmal in der Liste." },
+      "Ground": { "Name": "Ablegen auf den Boden erlauben", "Hint": "Braucht Ascandir - DnD5e Lootplacement oder Item Piles." }
+    }
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "id": "ascandir-dnd5e-inventorydoll",
+  "title": "Ascandir - DnD5e InventoryDoll",
+  "description": "Ersetzt den Inventar-Reiter des dnd5e-Charakterbogens durch ein Inventar mit Paperdoll: Ausrüstung auf Slots ziehen, drei Waffensets (synchron mit dem Ascandir Combat HUD), Behälter-Slots mit Primär-Behälter, zuklappbare Behälterlisten, Köcher-Munitionsauswahl und Ablegen auf den Boden. Der SL legt die Slots für alle Charaktere fest.",
+  "version": "0.1.0",
+  "authors": [
+    {
+      "name": "Ascandir"
+    }
+  ],
+  "compatibility": {
+    "minimum": "14",
+    "verified": "14.369.1"
+  },
+  "relationships": {
+    "systems": [
+      {
+        "id": "dnd5e",
+        "type": "system",
+        "compatibility": {
+          "minimum": "6.0.0",
+          "verified": "6.0.6"
+        }
+      }
+    ],
+    "recommends": [
+      {
+        "id": "ascandir-combat-hud",
+        "type": "module",
+        "reason": "Waffensets der Paperdoll und des Combat HUD sind dieselben."
+      },
+      {
+        "id": "ascandir-dnd5e-lootplacement",
+        "type": "module",
+        "reason": "Gegenstände von der Paperdoll auf den Boden legen."
+      }
+    ]
+  },
+  "esmodules": [
+    "scripts/main.js"
+  ],
+  "styles": [
+    "styles/inventorydoll.css"
+  ],
+  "languages": [
+    {
+      "lang": "de",
+      "name": "Deutsch",
+      "path": "lang/de.json"
+    },
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "socket": true,
+  "url": "https://github.com/Ascandir/Ascandir---DnD5e-InventoryDoll",
+  "manifest": "https://github.com/Ascandir/Ascandir---DnD5e-InventoryDoll/releases/latest/download/module.json",
+  "download": "https://github.com/Ascandir/Ascandir---DnD5e-InventoryDoll/releases/latest/download/ascandir-dnd5e-inventorydoll.zip"
+}
