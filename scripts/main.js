@@ -45,6 +45,14 @@ const LAYOUT_VERSION = 2;
 
 /** Feste Elemente (RK, Haupthand mit Set-Auswahl, Nebenhand) – vom SL verschiebbar. */
 const FIXED_DEFAULT = { ac: { x: 50, y: 92 }, main: { x: 14, y: 86 }, off: { x: 86, y: 86 } };
+/** Symbole für leere Felder (statt Beschriftung). */
+const SLOT_ICONS = {
+  head: "fa-hat-wizard", eyes: "fa-glasses", neck: "fa-medal", shoulders: "fa-vest", armor: "fa-user-shield",
+  clothing: "fa-shirt", wrists: "fa-hand-back-fist", hands: "fa-mitten", waist: "fa-grip-lines", feet: "fa-shoe-prints",
+  ring: "fa-ring", trinket: "fa-gem", focus: "fa-wand-magic-sparkles", any: "fa-star"
+};
+const slotIcon = (type, cls = "") => `<i class="fa-solid ${SLOT_ICONS[type] ?? "fa-circle"} aid-slot-icon ${cls}" inert></i>`;
+
 const DEFAULT_LAYOUT = {
   v: LAYOUT_VERSION,
   containerSlots: 4,
@@ -833,8 +841,7 @@ function renderSlot(actor, slot, d, editable) {
   const label = slotLabel(slot);
   return `<div class="aid-slot ${item ? "filled" : "empty"}" style="left:${a.x}%;top:${a.y}%"
       data-aid-drop="slot" data-slot="${esc(slot.id)}" ${item ? `data-aid-item="${item.id}" ${tipAttrs(item, slot.x > 50 ? "LEFT" : "RIGHT")}` : `data-tooltip="${esc(label)}"`}>
-      <div class="aid-tile" ${item && editable ? "draggable=\"true\"" : ""}>${item ? img(item.img, item.name) + attuneBadge(item) : ""}</div>
-      <span class="aid-label">${esc(label)}</span>
+      <div class="aid-tile" ${item && editable ? "draggable=\"true\"" : ""}>${item ? img(item.img, item.name) + attuneBadge(item) : slotIcon(slot.type)}</div>
     </div>`;
 }
 
@@ -852,9 +859,8 @@ function renderHands(actor, editable) {
     return `<div class="aid-hand ${which} ${item ? "filled" : "empty"} ${ghost ? "ghost" : ""}" style="left:${pos.x}%;top:${pos.y}%" data-aid-drop="weapon" data-set="${data.active}" data-which="${which}"
         ${real ? `data-aid-item="${item.id}" ${tipAttrs(item, which === "primary" ? "RIGHT" : "LEFT")}` : `data-tooltip="${esc(label)}"`} ${real && editable ? "draggable=\"true\"" : ""}>
         ${extra}
-        <span class="aid-label">${esc(label.toUpperCase())}</span>
-        <div class="aid-tile big">${item ? img(item.img, item.name) : ""}${ghost ? `<span class="aid-2h">${esc(L("Sets.TwoHandedShort"))}</span>` : ""}${real ? attuneBadge(item) : ""}</div>
-        <span class="aid-hname">${item ? esc(item.name) : ""}</span>
+        <div class="aid-tile big">${item ? img(item.img, item.name)
+    : `<i class="fa-solid ${which === "primary" ? "fa-khanda" : "fa-shield"} aid-slot-icon" inert></i>`}${ghost ? `<span class="aid-2h">${esc(L("Sets.TwoHandedShort"))}</span>` : ""}${real ? attuneBadge(item) : ""}</div>
       </div>`;
   };
   const nums = { 1: "I", 2: "II", 3: "III" };
