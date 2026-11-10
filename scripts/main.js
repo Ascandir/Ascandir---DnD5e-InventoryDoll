@@ -1402,6 +1402,32 @@ async function handleSheetDrop(app, event) {
   return true;
 }
 
+/** Suchfeld des Inventars auch auf die Behälterlisten anwenden. */
+function applySearch(tab) {
+  const input = tab.querySelector("item-list-controls input[type=text], item-list-controls search > input");
+  const q = (input?.value ?? "").trim().toLowerCase();
+  for ( const box of tab.querySelectorAll(".aid-containers .aid-container") ) {
+    const boxMatch = !!q && box.querySelector(".aid-container-header h3")?.textContent.toLowerCase().includes(q);
+    let any = false;
+    for ( const row of box.querySelectorAll(".aid-row") ) {
+      const hit = !q || boxMatch || row.querySelector(".title")?.textContent.toLowerCase().includes(q);
+      row.classList.toggle("aid-search-hidden", !hit);
+      any ||= hit;
+    }
+    box.classList.toggle("aid-search-hidden", !!q && !any && !boxMatch);
+    box.classList.toggle("aid-searching", !!q);
+  }
+}
+
+function bindSearch(tab) {
+  applySearch(tab);
+  if ( tab.dataset.aidSearch ) return;
+  tab.dataset.aidSearch = "1";
+  const later = foundry.utils.debounce(() => applySearch(tab), 120);
+  tab.addEventListener("input", ev => { if ( ev.target.closest("item-list-controls") ) later(); });
+  tab.addEventListener("click", ev => { if ( ev.target.closest("item-list-controls") ) later(); });
+}
+
 function hideWornRows(actor, tab) {
   if ( !setting("hideWornInList") ) return;
   const worn = wornIds(actor);
@@ -1456,6 +1482,7 @@ function inject(app, element) {
     if ( bar ) bindDoll(app, actor, bar);
   }
   hideWornRows(actor, tab);
+  bindSearch(tab);
 
   if ( setting("hideSidebar") && (app.tabGroups?.primary === "inventory") ) app._toggleSidebar?.(true);
 }

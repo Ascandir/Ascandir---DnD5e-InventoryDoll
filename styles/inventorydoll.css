@@ -607,3 +607,8 @@
 .aid-ed-denoms { display: flex; flex-wrap: wrap; gap: 6px 12px; }
 .aid-ed-denoms label { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; }
 .aid-ed-denoms .aid-coin { width: 16px; height: 16px; border: none; }
+
+/* ---------- v0.2.14: Suche in Behälterlisten ---------- */
+.aid-search-hidden { display: none !important; }
+.aid-container.aid-searching.collapsed .aid-container-body { display: block; }
+.aid-container.aid-searching .aid-empty { display: none; }
