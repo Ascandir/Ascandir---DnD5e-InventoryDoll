@@ -1870,11 +1870,20 @@ Hooks.on("preUpdateActor", (actor, changes, options) => {
     cc[d] = Number(own[d]) || 0;
     if ( diff ) delta[d] = diff;
   }
-  if ( Object.keys(delta).length ) options.aidPurseDelta = delta;
+  // Direkt einplanen: Ändert die Aktualisierung sonst nichts, verwirft Foundry sie und updateActor feuert nie.
+  if ( Object.keys(delta).length ) queueCoinDelta(actor, delta);
 });
-Hooks.on("updateActor", (actor, changes, options, userId) => {
-  if ( (userId === game.user.id) && options.aidPurseDelta ) applyCoinDelta(actor, options.aidPurseDelta);
-});
+
+/** Münz-Änderungen nacheinander abarbeiten, damit schnelle Käufe sich nicht überholen. */
+const coinQueue = new Map();
+function queueCoinDelta(actor, delta) {
+  const prev = coinQueue.get(actor.uuid) ?? Promise.resolve();
+  const next = prev.then(() => new Promise(r => setTimeout(r, 0)))
+    .then(() => applyCoinDelta(actor, delta))
+    .catch(err => console.error(`${ID} | Geldbörse`, err));
+  coinQueue.set(actor.uuid, next);
+  return next;
+}
 
 Hooks.on("renderCharacterActorSheet", (app, element) => {
   try {
