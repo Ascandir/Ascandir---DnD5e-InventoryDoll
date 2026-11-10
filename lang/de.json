@@ -37,7 +37,8 @@
       "AC": "Rüstungsklasse",
       "ACShort": "RK",
       "AutoFill": "Ausgerüstetes einsortieren",
-      "AutoFillHint": "Bereits ausgerüstete Gegenstände in passende Slots legen und Behälter anbinden"
+      "AutoFillHint": "Bereits ausgerüstete Gegenstände in passende Slots legen und Behälter anbinden",
+      "Config": "Paperdoll-Einstellungen"
     },
     "Sets": {
       "Title": "Waffensets",
@@ -99,7 +100,8 @@
       "Hint": "Wundersame Gegenstände haben in dnd5e keinen Slot-Typ. Sie werden am Namen erkannt (z. B. Umhang, Stiefel, Ring). Klappt das nicht, halte beim Ablegen auf den Slot die Umschalttaste gedrückt: Der Gegenstand merkt sich den Slot-Typ.",
       "Reset": "Standard",
       "Save": "Layout speichern",
-      "Saved": "Paperdoll-Layout gespeichert."
+      "Saved": "Paperdoll-Layout gespeichert.",
+      "AllSettings": "Alle Moduleinstellungen"
     },
     "Settings": {
       "Editor": {

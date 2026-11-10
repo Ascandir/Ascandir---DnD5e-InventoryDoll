@@ -39,6 +39,8 @@ https://github.com/Ascandir/Ascandir---DnD5e-InventoryDoll/releases/latest/downl
 
 *Spieleinstellungen → Moduleinstellungen → Ascandir - DnD5e InventoryDoll → Slots bearbeiten*
 
+Oder direkt im Charakterbogen: Bogen in den Bearbeiten-Modus schalten, dann oben an der Paperdoll auf das **Zahnrad** klicken. Im Editor führt „Alle Moduleinstellungen“ zu den übrigen Einstellungen.
+
 - Ein Layout für **alle** Charaktere.
 - An jedem freien Punkt um das Porträt gibt es ein **+**, um einen Slot hinzuzufügen.
 - Slot anklicken → **Slot-Typ** wählen (Kopf, Augen, Hals, Umhang, Rüstung, Kleidung, Handgelenke, Hände, Gürtel, Füße, Ring, Schmuckstück, Fokus, Wundersam), Beschriftung ändern oder Slot entfernen.

@@ -542,9 +542,11 @@ function renderDoll(app, actor) {
     ? `<div class="aid-ground" data-aid-drop="ground"><i class="fa-solid fa-arrow-down-to-line" inert></i> ${esc(L("Ground.Zone"))}</div>` : "";
   const auto = editable
     ? `<button type="button" class="aid-auto" data-aid-auto data-tooltip="${esc(L("Doll.AutoFillHint"))}" aria-label="${esc(L("Doll.AutoFill"))}"><i class="fa-solid fa-wand-magic-sparkles" inert></i></button>` : "";
+  const gear = (game.user.isGM && app.isEditMode)
+    ? `<button type="button" class="aid-auto" data-aid-config data-tooltip="${esc(L("Doll.Config"))}" aria-label="${esc(L("Doll.Config"))}"><i class="fa-solid fa-gear" inert></i></button>` : "";
   return `<aside class="aid-doll ${editable ? "editable" : "locked"}">
       <section class="aid-card">
-        <header class="aid-header"><h3>${esc(L("Doll.Title"))}</h3>${auto}</header>
+        <header class="aid-header"><h3>${esc(L("Doll.Title"))}</h3>${auto}${gear}</header>
         <div class="aid-figure">
           <div class="aid-portrait">${img(actor.img, actor.name)}</div>
           <div class="aid-ac" data-tooltip="${esc(L("Doll.AC"))}"><span>${esc(L("Doll.ACShort"))}</span><strong>${esc(ac)}</strong></div>
@@ -720,6 +722,12 @@ function bindDoll(app, actor, aside) {
     ev.preventDefault();
     if ( editable || actor.isOwner ) switchSet(actor, b.dataset.aidSet);
   }));
+
+  aside.querySelector("[data-aid-config]")?.addEventListener("click", ev => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    if ( game.user.isGM ) new LayoutEditor().render({ force: true });
+  });
 
   aside.querySelector("[data-aid-auto]")?.addEventListener("click", ev => {
     ev.preventDefault();
@@ -938,6 +946,7 @@ class LayoutEditor extends ApplicationV2 {
             <label class="aid-ed-field inline"><span>${esc(L("Editor.ContainerSlots"))}</span><input type="number" min="1" max="8" step="1" data-field="containerSlots" value="${lay.containerSlots}"></label>
           </fieldset>
           <p class="aid-ed-hint">${esc(L("Editor.Hint"))}</p>
+          <button type="button" data-settings><i class="fa-solid fa-sliders" inert></i> ${esc(L("Editor.AllSettings"))}</button>
           <div class="aid-ed-buttons">
             <button type="button" data-reset><i class="fa-solid fa-rotate-left" inert></i> ${esc(L("Editor.Reset"))}</button>
             <button type="button" class="bright" data-save><i class="fa-solid fa-floppy-disk" inert></i> ${esc(L("Editor.Save"))}</button>
@@ -976,6 +985,13 @@ class LayoutEditor extends ApplicationV2 {
       this.layout.slots = this.layout.slots.filter(s => s.id !== this.selected);
       this.selected = this.layout.slots[0]?.id ?? null;
       this.render();
+    });
+    content.querySelector("[data-settings]")?.addEventListener("click", async () => {
+      const Config = foundry.applications.settings?.SettingsConfig;
+      if ( !Config ) return game.settings.sheet?.render(true);
+      const cfg = foundry.applications.instances.get("settings-config") ?? new Config();
+      await cfg.render({ force: true });
+      try { cfg.changeTab?.(ID, "categories"); } catch { /* Reiter optional */ }
     });
     content.querySelector("[data-reset]")?.addEventListener("click", () => {
       this.layout = foundry.utils.deepClone(DEFAULT_LAYOUT);

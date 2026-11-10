@@ -37,7 +37,8 @@
       "AC": "Armor Class",
       "ACShort": "AC",
       "AutoFill": "Sort in equipped items",
-      "AutoFillHint": "Put already equipped items into matching slots and attach containers"
+      "AutoFillHint": "Put already equipped items into matching slots and attach containers",
+      "Config": "Paperdoll settings"
     },
     "Sets": {
       "Title": "Weapon Sets",
@@ -99,7 +100,8 @@
       "Hint": "Wondrous items have no slot type in dnd5e. They are recognized by name (e.g. Cloak, Boots, Ring). If that fails, hold Shift while dropping it on the slot: the item remembers the slot type.",
       "Reset": "Default",
       "Save": "Save layout",
-      "Saved": "Paperdoll layout saved."
+      "Saved": "Paperdoll layout saved.",
+      "AllSettings": "All module settings"
     },
     "Settings": {
       "Editor": {
