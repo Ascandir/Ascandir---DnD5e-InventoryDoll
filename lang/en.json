@@ -124,8 +124,8 @@
         "Hint": "Only allow items that match the slot type."
       },
       "HideWorn": {
-        "Name": "Hide worn items from the list",
-        "Hint": "Items on the paperdoll, in weapon sets and attached containers are not repeated in the item list."
+        "Name": "Hide equipped items from the list",
+        "Hint": "Equipped items, weapon sets and attached containers only appear on the paperdoll, not in the item list."
       },
       "Ground": {
         "Name": "Allow dropping on the ground",

@@ -124,8 +124,8 @@
         "Hint": "Nur Gegenstände zulassen, die zum Slot-Typ passen."
       },
       "HideWorn": {
-        "Name": "Getragenes in der Liste ausblenden",
-        "Hint": "Gegenstände auf der Paperdoll, in Waffensets und angelegten Behältern erscheinen nicht noch einmal in der Liste."
+        "Name": "Ausgerüstetes in der Liste ausblenden",
+        "Hint": "Ausgerüstete Gegenstände, Waffensets und angelegte Behälter erscheinen nur auf der Paperdoll, nicht in der Liste rechts."
       },
       "Ground": {
         "Name": "Ablegen auf den Boden erlauben",

@@ -455,12 +455,18 @@ async function groundHandler({ itemUuid, actorUuid, sceneId, point, quantity }, 
 
 const img = (src, alt = "") => `<img src="${esc(src)}" alt="${esc(alt)}" draggable="false">`;
 
+/** Reichhaltiger dnd5e-Tooltip für einen Gegenstand (wie im normalen Inventar). */
+function tipAttrs(item, direction = "RIGHT") {
+  const html = `<section class="loading" data-uuid="${item.uuid}"><i class="fas fa-spinner fa-spin-pulse" inert></i></section>`;
+  return `data-tooltip-html="${esc(html)}" data-tooltip-class="dnd5e2 dnd5e-tooltip item-tooltip document-tooltip" data-tooltip-direction="${direction}"`;
+}
+
 function renderSlot(actor, slot, d, editable) {
   const a = ANCHORS[slot.anchor];
   const item = actor.items.get(slotItemId(d, slot.id));
   const label = slotLabel(slot);
   return `<div class="aid-slot ${item ? "filled" : "empty"}" style="left:${a.x}%;top:${a.y}%"
-      data-aid-drop="slot" data-slot="${esc(slot.id)}" ${item ? `data-aid-item="${item.id}" data-tooltip="${esc(item.name)}"` : `data-tooltip="${esc(label)}"`}>
+      data-aid-drop="slot" data-slot="${esc(slot.id)}" ${item ? `data-aid-item="${item.id}" ${tipAttrs(item, ANCHORS[slot.anchor].x > 50 ? "LEFT" : "RIGHT")}` : `data-tooltip="${esc(label)}"`}>
       <div class="aid-tile" ${item && editable ? "draggable=\"true\"" : ""}>${item ? img(item.img, item.name) : ""}</div>
       <span class="aid-label">${esc(label)}</span>
     </div>`;
@@ -470,7 +476,7 @@ function renderWeaponSlot(actor, set, which, id, editable, two = false) {
   const item = actor.items.get(id);
   const placeholder = L(which === "primary" ? "Sets.Main" : "Sets.Off");
   return `<div class="aid-wslot ${item ? "filled" : "empty"} ${two ? "two" : ""}" data-aid-drop="weapon" data-set="${set}" data-which="${which}"
-      ${item ? `data-aid-item="${item.id}"` : ""} ${item && editable ? "draggable=\"true\"" : ""}>
+      ${item ? `data-aid-item="${item.id}" ${tipAttrs(item)}` : ""} ${item && editable ? "draggable=\"true\"" : ""}>
       ${item ? `<span class="aid-wimg">${img(item.img, item.name)}</span><span class="aid-wname">${esc(item.name)}</span>`
     : `<span class="aid-wplace">${esc(placeholder)}</span>`}
       ${two ? `<span class="aid-pill">${esc(L("Sets.TwoHanded"))}</span>` : ""}
@@ -514,7 +520,7 @@ function renderContainerSlots(actor, d, editable) {
     const c = actor.items.get(d.containers[i]);
     const tag = i === 0 ? `★ ${L("Containers.Primary")}` : `${i + 1}`;
     cells.push(`<div class="aid-cslot ${c ? "filled" : "empty"} ${i === 0 ? "primary" : ""}" data-aid-drop="container" data-index="${i}"
-        ${c ? `data-aid-item="${c.id}"` : ""}>
+        ${c ? `data-aid-item="${c.id}" ${tipAttrs(c)}` : ""}>
         <span class="aid-ctag">${esc(tag)}</span>
         ${c ? `<div class="aid-cbody" ${editable ? "draggable=\"true\"" : ""}>${img(c.img, c.name)}<span class="aid-cname">${esc(c.name)}</span></div>${ammoSelect(actor, c, d)}`
     : `<span class="aid-cplace">${esc(L("Containers.Drop"))}</span>`}
@@ -569,7 +575,7 @@ function renderRow(app, item, editable) {
     : `<span>${qty}</span>`;
   return `<li class="item aid-row" data-item-id="${item.id}" data-uuid="${esc(item.uuid)}" data-aid-item="${item.id}" draggable="true">
       <div class="item-row">
-        <div class="item-name aid-name" role="button" data-aid-act="open">
+        <div class="item-name aid-name" role="button" data-aid-act="open" ${tipAttrs(item, "LEFT")}>
           ${img(item.img, item.name).replace("<img", "<img class=\"item-image gold-icon\"")}
           <div class="name name-stacked"><span class="title">${esc(item.name)}</span><span class="subtitle">${esc(itemSubtitle(item))}</span></div>
         </div>
@@ -665,6 +671,23 @@ function setDragData(event, item, extra = {}) {
   event.stopPropagation();
 }
 
+/** Tooltip des Elements anzeigen und – sobald geladen – als eigenes Fenster festhalten. */
+async function lockTooltip(el) {
+  const tm = game.tooltip;
+  if ( !tm ) return;
+  if ( tm.element !== el ) {
+    const { tooltipHtml: html, tooltipClass: cssClass, tooltipDirection: direction } = el.dataset;
+    const content = document.createElement("div");
+    content.innerHTML = html ?? "";
+    tm.activate(el, { content: content.firstElementChild ?? content, cssClass, direction });
+  }
+  for ( let i = 0; i < 40; i++ ) {
+    if ( !tm.tooltip?.querySelector(".loading") ) break;
+    await new Promise(r => setTimeout(r, 25));
+  }
+  if ( tm.element === el ) tm.lockTooltip?.();
+}
+
 function bindDoll(app, actor, aside) {
   const editable = app.isEditable && canEdit(actor);
 
@@ -683,11 +706,13 @@ function bindDoll(app, actor, aside) {
       ev.preventDefault();
       actor.items.get(el.dataset.aidItem)?.sheet.render(true);
     });
-    if ( editable ) el.addEventListener("contextmenu", ev => {
+    el.addEventListener("contextmenu", ev => {
       ev.preventDefault();
       ev.stopPropagation();
       const item = actor.items.get(el.dataset.aidItem);
-      if ( item ) unequip(actor, item, el.dataset.aidDrop === "container" ? null : undefined);
+      if ( !item ) return;
+      if ( ev.shiftKey && editable ) return unequip(actor, item, el.dataset.aidDrop === "container" ? null : undefined);
+      lockTooltip(el);
     });
   });
 
@@ -812,6 +837,12 @@ function bindRightSide(app, actor, tab) {
 function hideWornRows(actor, tab) {
   if ( !setting("hideWornInList") ) return;
   const worn = wornIds(actor);
+  // Ausgerüstete Gegenstände, die auf die Paperdoll gehören, ebenfalls ausblenden
+  const slotTypes = getLayout().slots.map(s => s.type);
+  for ( const item of actor.items ) {
+    if ( !item.system.equipped || (item.type === "container") ) continue;
+    if ( (item.type === "weapon") || isShield(item) || slotTypes.some(t => matchesType(item, t)) ) worn.add(item.id);
+  }
   const list = tab.querySelector(".inventory-element .items-list");
   if ( !list ) return;
   for ( const li of list.querySelectorAll("li.item[data-item-id]") ) {
