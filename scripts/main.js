@@ -1402,20 +1402,31 @@ async function handleSheetDrop(app, event) {
   return true;
 }
 
-/** Suchfeld des Inventars auch auf die Behälterlisten anwenden. */
-function applySearch(tab) {
-  const input = tab.querySelector("item-list-controls input[type=text], item-list-controls search > input");
-  const q = (input?.value ?? "").trim().toLowerCase();
+/** Suche und Filter des Inventars (dnd5e-Regeln) auch auf die Behälterlisten anwenden. */
+function applySearch(tab, controls) {
+  controls ??= tab.querySelector("item-list-controls");
+  const input = controls?.querySelector("search > input, input[type=text]");
+  const state = controls?.state ?? {};
+  const q = String(state.name ?? input?.value ?? "").trim().toLowerCase();
+  let allowed = null;
+  try {
+    if ( state.properties?.size && controls.app?._filterChildren ) {
+      allowed = new Set(controls.app._filterChildren("items", state.properties).map(i => i.id));
+    }
+  } catch ( err ) { console.warn(`${ID} | Filter`, err); }
+  const active = !!q || !!allowed;
   for ( const box of tab.querySelectorAll(".aid-containers .aid-container") ) {
-    const boxMatch = !!q && box.querySelector(".aid-container-header h3")?.textContent.toLowerCase().includes(q);
+    const boxMatch = !!q && !allowed && box.querySelector(".aid-container-header h3")?.textContent.toLowerCase().includes(q);
     let any = false;
     for ( const row of box.querySelectorAll(".aid-row") ) {
-      const hit = !q || boxMatch || row.querySelector(".title")?.textContent.toLowerCase().includes(q);
+      const passesFilter = !allowed || allowed.has(row.dataset.itemId);
+      const passesName = !q || boxMatch || row.querySelector(".title")?.textContent.toLowerCase().includes(q);
+      const hit = passesFilter && passesName;
       row.classList.toggle("aid-search-hidden", !hit);
       any ||= hit;
     }
-    box.classList.toggle("aid-search-hidden", !!q && !any && !boxMatch);
-    box.classList.toggle("aid-searching", !!q);
+    box.classList.toggle("aid-search-hidden", active && !any && !boxMatch);
+    box.classList.toggle("aid-searching", active);
   }
 }
 
@@ -1868,6 +1879,19 @@ Hooks.once("setup", () => {
     } catch ( err ) { console.error(`${ID} | Drop`, err); }
     return originalDrop.call(this, event);
   };
+  // Suche/Filter von dnd5e auch auf die Behälterlisten übertragen
+  const Controls = customElements.get("item-list-controls");
+  if ( Controls?.prototype._applyFilters ) {
+    const applyFilters = Controls.prototype._applyFilters;
+    Controls.prototype._applyFilters = function(...args) {
+      const r = applyFilters.apply(this, args);
+      try {
+        const tab = this.closest(".tab.aid-tab");
+        if ( tab ) applySearch(tab, this);
+      } catch ( err ) { console.warn(`${ID} | Filter`, err); }
+      return r;
+    };
+  }
   const original = Sheet.prototype.changeTab;
   Sheet.prototype.changeTab = function(tab, group, options) {
     original.call(this, tab, group, options);
