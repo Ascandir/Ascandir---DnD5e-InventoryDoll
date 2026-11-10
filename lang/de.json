@@ -102,13 +102,39 @@
       "Saved": "Paperdoll-Layout gespeichert."
     },
     "Settings": {
-      "Editor": { "Name": "Paperdoll-Layout", "Label": "Slots bearbeiten", "Hint": "Ausrüstungs-Slots der Paperdoll für alle Charaktere hinzufügen, entfernen und mit einem Typ versehen." },
-      "Enabled": { "Name": "Inventar-Reiter ersetzen", "Hint": "Paperdoll-Inventar in Charakterbögen anzeigen." },
-      "HideSidebar": { "Name": "Seitenleiste im Inventar ausblenden", "Hint": "Das Porträt wandert in die Paperdoll; andere Reiter behalten die Seitenleiste." },
-      "PlayersEquip": { "Name": "Spieler dürfen ausrüsten", "Hint": "Ist das aus, kann nur der SL die Paperdoll ändern." },
-      "Strict": { "Name": "Slot-Typen streng prüfen", "Hint": "Nur Gegenstände zulassen, die zum Slot-Typ passen." },
-      "HideWorn": { "Name": "Getragenes in der Liste ausblenden", "Hint": "Gegenstände auf der Paperdoll, in Waffensets und angelegten Behältern erscheinen nicht noch einmal in der Liste." },
-      "Ground": { "Name": "Ablegen auf den Boden erlauben", "Hint": "Braucht Ascandir - DnD5e Lootplacement oder Item Piles." }
+      "Editor": {
+        "Name": "Paperdoll-Layout",
+        "Label": "Slots bearbeiten",
+        "Hint": "Ausrüstungs-Slots der Paperdoll für alle Charaktere hinzufügen, entfernen und mit einem Typ versehen."
+      },
+      "Enabled": {
+        "Name": "Inventar-Reiter ersetzen",
+        "Hint": "Paperdoll-Inventar in Charakterbögen anzeigen."
+      },
+      "HideSidebar": {
+        "Name": "Seitenleiste im Inventar ausblenden",
+        "Hint": "Das Porträt wandert in die Paperdoll; andere Reiter behalten die Seitenleiste."
+      },
+      "PlayersEquip": {
+        "Name": "Spieler dürfen ausrüsten",
+        "Hint": "Ist das aus, kann nur der SL die Paperdoll ändern."
+      },
+      "Strict": {
+        "Name": "Slot-Typen streng prüfen",
+        "Hint": "Nur Gegenstände zulassen, die zum Slot-Typ passen."
+      },
+      "HideWorn": {
+        "Name": "Getragenes in der Liste ausblenden",
+        "Hint": "Gegenstände auf der Paperdoll, in Waffensets und angelegten Behältern erscheinen nicht noch einmal in der Liste."
+      },
+      "Ground": {
+        "Name": "Ablegen auf den Boden erlauben",
+        "Hint": "Braucht Ascandir - DnD5e Lootplacement oder Item Piles."
+      },
+      "AutoEquip": {
+        "Name": "Ausgerüstetes automatisch auf die Paperdoll",
+        "Hint": "Wird ein Gegenstand in der Liste ausgerüstet (Schild-Symbol), kommt er auf den passenden Slot der Paperdoll bzw. ins aktive Waffenset."
+      }
     }
   }
 }

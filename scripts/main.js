@@ -179,7 +179,7 @@ async function commit(actor, flagUpdate, itemUpdates) {
   const merged = new Map();
   for ( const u of itemUpdates ) merged.set(u._id, { ...(merged.get(u._id) ?? {}), ...u });
   if ( flagUpdate && Object.keys(flagUpdate).length ) await actor.update(flagUpdate);
-  if ( merged.size ) await actor.updateEmbeddedDocuments("Item", [...merged.values()]);
+  if ( merged.size ) await actor.updateEmbeddedDocuments("Item", [...merged.values()], { aid: true });
 }
 
 /** Referenzen eines Gegenstands aus Slots, Sets und Behälter-Slots entfernen (verändert d/sets). */
@@ -346,6 +346,33 @@ async function autoFill(actor) {
   }
   await commit(actor, { ...dollUpdate(d), ...setsUpdate(data) }, updates);
   ui.notifications.info(L("Info.AutoFilled"));
+}
+
+/**
+ * Wird ein Gegenstand außerhalb der Paperdoll ausgerüstet (z. B. Schild-Symbol in der Liste),
+ * kommt er automatisch auf den passenden Slot bzw. ins aktive Waffenset.
+ */
+async function autoEquip(actor, item) {
+  if ( !setting("autoEquip") || !canEdit(actor) ) return;
+  if ( wornIds(actor).has(item.id) ) return;
+  if ( item.type === "container" ) return;
+
+  // Waffen und Schilde → aktives Waffenset
+  if ( (item.type === "weapon") || isShield(item) ) {
+    const data = getSets(actor);
+    const s = data.sets[data.active];
+    const main = actor.items.get(s.primary);
+    let which = "primary";
+    if ( isShield(item) ) which = "secondary";
+    else if ( main && !isTwoHanded(main) && !isTwoHanded(item) && !s.secondary ) which = "secondary";
+    return assignWeapon(actor, item, data.active, which);
+  }
+
+  // Sonstige Ausrüstung → passender Körper-Slot (freier zuerst, sonst wird getauscht)
+  const d = getDoll(actor);
+  const matching = getLayout().slots.filter(sl => matchesType(item, sl.type));
+  const slot = matching.find(sl => !slotItemId(d, sl.id)) ?? matching[0];
+  if ( slot ) return equipToSlot(actor, item, slot.id);
 }
 
 /* -------------------------------------------- */
@@ -953,6 +980,7 @@ Hooks.once("init", () => {
   reg("hideSidebar", { name: "AID.Settings.HideSidebar.Name", hint: "AID.Settings.HideSidebar.Hint", type: Boolean, default: true, onChange: rerenderSheets });
   reg("playersEquip", { name: "AID.Settings.PlayersEquip.Name", hint: "AID.Settings.PlayersEquip.Hint", type: Boolean, default: true, onChange: rerenderSheets });
   reg("strictSlots", { name: "AID.Settings.Strict.Name", hint: "AID.Settings.Strict.Hint", type: Boolean, default: true });
+  reg("autoEquip", { name: "AID.Settings.AutoEquip.Name", hint: "AID.Settings.AutoEquip.Hint", type: Boolean, default: true });
   reg("hideWornInList", { name: "AID.Settings.HideWorn.Name", hint: "AID.Settings.HideWorn.Hint", type: Boolean, default: true, onChange: rerenderSheets });
   reg("allowGround", { name: "AID.Settings.Ground.Name", hint: "AID.Settings.Ground.Hint", type: Boolean, default: true, onChange: rerenderSheets });
 });
@@ -986,8 +1014,10 @@ Hooks.on("renderCharacterActorSheet", (app, element) => {
 
 // Wird ein Gegenstand anderweitig in einen Behälter gelegt oder abgelegt, Paperdoll aufräumen.
 Hooks.on("updateItem", (item, changes, options, userId) => {
-  if ( (userId !== game.user.id) || !(item.parent instanceof Actor) || (item.parent.type !== "character") ) return;
+  if ( (userId !== game.user.id) || options.aid || !(item.parent instanceof Actor) || (item.parent.type !== "character") ) return;
   const actor = item.parent;
+  if ( !setting("enabled") ) return;
+  if ( foundry.utils.getProperty(changes, "system.equipped") === true ) return autoEquip(actor, item);
   const movedIn = foundry.utils.hasProperty(changes, "system.container") && changes.system.container;
   const unequipped = foundry.utils.getProperty(changes, "system.equipped") === false;
   if ( !movedIn && !unequipped ) return;

@@ -102,13 +102,39 @@
       "Saved": "Paperdoll layout saved."
     },
     "Settings": {
-      "Editor": { "Name": "Paperdoll layout", "Label": "Edit slots", "Hint": "Add, remove and type the equipment slots of the paperdoll for all characters." },
-      "Enabled": { "Name": "Replace inventory tab", "Hint": "Show the paperdoll inventory on character sheets." },
-      "HideSidebar": { "Name": "Hide sidebar on the inventory tab", "Hint": "The portrait moves into the paperdoll; other tabs keep the sidebar." },
-      "PlayersEquip": { "Name": "Players may equip", "Hint": "If disabled, only the GM can change the paperdoll." },
-      "Strict": { "Name": "Strict slot types", "Hint": "Only allow items that match the slot type." },
-      "HideWorn": { "Name": "Hide worn items from the list", "Hint": "Items on the paperdoll, in weapon sets and attached containers are not repeated in the item list." },
-      "Ground": { "Name": "Allow dropping on the ground", "Hint": "Needs Ascandir - DnD5e Lootplacement or Item Piles." }
+      "Editor": {
+        "Name": "Paperdoll layout",
+        "Label": "Edit slots",
+        "Hint": "Add, remove and type the equipment slots of the paperdoll for all characters."
+      },
+      "Enabled": {
+        "Name": "Replace inventory tab",
+        "Hint": "Show the paperdoll inventory on character sheets."
+      },
+      "HideSidebar": {
+        "Name": "Hide sidebar on the inventory tab",
+        "Hint": "The portrait moves into the paperdoll; other tabs keep the sidebar."
+      },
+      "PlayersEquip": {
+        "Name": "Players may equip",
+        "Hint": "If disabled, only the GM can change the paperdoll."
+      },
+      "Strict": {
+        "Name": "Strict slot types",
+        "Hint": "Only allow items that match the slot type."
+      },
+      "HideWorn": {
+        "Name": "Hide worn items from the list",
+        "Hint": "Items on the paperdoll, in weapon sets and attached containers are not repeated in the item list."
+      },
+      "Ground": {
+        "Name": "Allow dropping on the ground",
+        "Hint": "Needs Ascandir - DnD5e Lootplacement or Item Piles."
+      },
+      "AutoEquip": {
+        "Name": "Auto-place equipped items",
+        "Hint": "Equipping an item in the list (shield icon) moves it onto the matching paperdoll slot or into the active weapon set."
+      }
     }
   }
 }

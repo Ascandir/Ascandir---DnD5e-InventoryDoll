@@ -24,6 +24,7 @@ https://github.com/Ascandir/Ascandir---DnD5e-InventoryDoll/releases/latest/downl
 - **Köcher:** Liegt Munition in einem angebundenen Behälter, erscheint ein Auswahlfeld. Die gewählte Munition wird bei Fernkampfwaffen als Munition vorausgewählt.
 - **Boden:** Gegenstand auf das Bodenfeld ziehen = neben dem eigenen Token ablegen (braucht *Ascandir - DnD5e Lootplacement* oder *Item Piles*).
 - Der Zauberstab-Knopf oben sortiert bereits ausgerüstete Gegenstände automatisch in passende Slots.
+- Wird ein Gegenstand in der Liste rechts ausgerüstet (Schild-Symbol), wandert er automatisch auf den passenden Slot – Waffen und Schilde ins aktive Waffenset. Ist der Slot belegt, wird getauscht und das Alte landet im Primär-Behälter.
 
 **Rechts – Behälter**
 - Traglast, Währung, Suche und Einstimmung bleiben wie im Standardbogen.
