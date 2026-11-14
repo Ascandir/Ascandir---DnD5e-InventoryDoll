@@ -1610,7 +1610,7 @@ const reconciling = new Set();
 function reconcile(actor) {
   if ( !setting("enabled") || !setting("autoEquip") || !canEdit(actor) || reconciling.has(actor.id) ) return;
   const worn = wornIds(actor);
-  const pending = actor.items.some(i => i.system.equipped && !worn.has(i.id) && inInventory(i) && (i.type !== "container") && !isCoinPile(i));
+  const pending = actor.items.some(i => i.system.equipped && !worn.has(i.id) && !freshItems.has(i.id) && inInventory(i) && (i.type !== "container") && !isCoinPile(i));
   if ( !pending ) return;
   reconciling.add(actor.id);
   setTimeout(async () => {
@@ -2020,6 +2020,7 @@ Hooks.once("init", () => {
   reg("hideSidebar", { name: "AID.Settings.HideSidebar.Name", hint: "AID.Settings.HideSidebar.Hint", type: Boolean, default: true, onChange: rerenderSheets });
   reg("playersEquip", { name: "AID.Settings.PlayersEquip.Name", hint: "AID.Settings.PlayersEquip.Hint", type: Boolean, default: true, onChange: rerenderSheets });
   reg("strictSlots", { name: "AID.Settings.Strict.Name", hint: "AID.Settings.Strict.Hint", type: Boolean, default: true });
+  reg("newUnequipped", { name: "AID.Settings.NewUnequipped.Name", hint: "AID.Settings.NewUnequipped.Hint", type: Boolean, default: true });
   reg("autoEquip", { name: "AID.Settings.AutoEquip.Name", hint: "AID.Settings.AutoEquip.Hint", type: Boolean, default: true });
   reg("autoAttune", { name: "AID.Settings.Attune.Name", hint: "AID.Settings.Attune.Hint", type: Boolean, default: true });
   reg("emptyHighlight", {
@@ -2115,15 +2116,17 @@ function queueCoinDelta(actor, delta) {
   return next;
 }
 
+// Neue Gegenstände (Plutonium-Import, Equipment Shop, Übergabe) kommen unausgerüstet ins Inventar
+Hooks.on("preCreateItem", (item, data, options, userId) => {
+  if ( (userId !== game.user.id) || options.aid || !setting("enabled") || !setting("newUnequipped") ) return;
+  const actor = item.parent;
+  if ( !(actor instanceof Actor) || (actor.type !== "character") ) return;
+  if ( item.system?.equipped ) item.updateSource({ "system.equipped": false });
+});
+
 Hooks.on("createItem", (item, options, userId) => {
   freshItems.add(item.id);
   setTimeout(() => freshItems.delete(item.id), 5000);
-  if ( (userId === game.user.id) && !options.aid && item.system?.equipped && (item.parent instanceof Actor)
-    && (item.parent.type === "character") && setting("enabled") ) {
-    const actor = item.parent;
-    clearTimeout(createTimers.get(actor.id));
-    createTimers.set(actor.id, setTimeout(() => reconcile(actor), 300));
-  }
   if ( (userId !== game.user.id) || options.aid || !isCoinPile(item) ) return;
   const actor = item.parent;
   if ( !(actor instanceof Actor) || (actor.type !== "character") || !setting("enabled") ) return;
@@ -2146,6 +2149,9 @@ Hooks.on("updateItem", (item, changes, options, userId) => {
   if ( !setting("enabled") ) return;
   if ( foundry.utils.getProperty(changes, "system.equipped") === true ) {
     // Gerade gekauft/importiert: nur auf freie Plätze, nichts tauschen
+    if ( freshItems.has(item.id) && setting("newUnequipped") ) {
+      return item.update({ "system.equipped": false }, { aid: true });
+    }
     if ( freshItems.has(item.id) ) return reconcile(actor);
     return autoEquip(actor, item);
   }
