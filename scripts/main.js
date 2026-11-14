@@ -509,7 +509,7 @@ function autoCandidate(item) {
 }
 
 /** Ausgerüstete, noch nicht einsortierte Gegenstände automatisch verteilen. */
-async function autoFill(actor) {
+async function autoFill(actor, { loose = true, containers = true, quiet = false } = {}) {
   const layout = getLayout();
   const d = getDoll(actor);
   const data = getSets(actor);
@@ -533,6 +533,10 @@ async function autoFill(actor) {
     d.slots.push({ s: slot.id, i: item.id });
     worn.add(item.id);
     updates.push(equipUpdate(item, true));
+  }
+  if ( !loose ) {
+    if ( updates.length ) await commit(actor, { ...dollUpdate(d), ...setsUpdate(data) }, updates);
+    return updates.length;
   }
   // Zweite Runde: leere Slots mit nicht verstauten, passenden Gegenständen füllen
   // (breite Typen wie Schmuckstück/Wundersam bleiben aus, damit kein Krimskrams angelegt wird)
@@ -560,14 +564,15 @@ async function autoFill(actor) {
       if ( off ) { s.secondary = off.id; worn.add(off.id); updates.push(equipUpdate(off, true)); }
     }
   }
-  if ( !d.containers.some(Boolean) ) {
+  if ( containers && !d.containers.some(Boolean) ) {
     const packs = actor.itemTypes.container.filter(c => !c.system.container && !isPurse(c) && ((Number(c.system.quantity ?? 1) || 0) > 0));
     packs.sort((a, b) => (nameHas(b, ["backpack", "rucksack"]) ? 1 : 0) - (nameHas(a, ["backpack", "rucksack"]) ? 1 : 0));
     d.containers = packs.slice(0, layout.containerSlots).map(c => c.id);
     for ( const c of packs.slice(0, layout.containerSlots) ) updates.push(equipUpdate(c, true));
   }
   await commit(actor, { ...dollUpdate(d), ...setsUpdate(data) }, updates);
-  ui.notifications.info(L("Info.AutoFilled"));
+  if ( !quiet ) ui.notifications.info(L("Info.AutoFilled"));
+  return updates.length;
 }
 
 /**
@@ -1565,12 +1570,6 @@ function bindSearch(tab) {
 function hideWornRows(actor, tab) {
   if ( !setting("hideWornInList") ) return;
   const worn = wornIds(actor);
-  // Ausgerüstete Gegenstände, die auf die Paperdoll gehören, ebenfalls ausblenden
-  const slotTypes = getLayout().slots.map(s => s.type);
-  for ( const item of actor.items ) {
-    if ( !item.system.equipped || (item.type === "container") ) continue;
-    if ( (item.type === "weapon") || isShield(item) || slotTypes.some(t => matchesType(item, t)) ) worn.add(item.id);
-  }
   const list = tab.querySelector(".inventory-element .items-list");
   if ( !list ) return;
   for ( const li of list.querySelectorAll("li.item[data-item-id]") ) {
@@ -1593,6 +1592,25 @@ function fitDoll(tab, aside) {
   const ro = new ResizeObserver(fit);
   ro.observe(host);
   fit();
+}
+
+/**
+ * Gegenstände, die schon als „ausgerüstet“ ankommen (Plutonium-Import, altes Inventar), auf freie passende
+ * Slots bzw. ins aktive Waffenset legen. Belegte Slots werden nicht getauscht; was keinen Platz findet,
+ * bleibt sichtbar in der Liste.
+ */
+const reconciling = new Set();
+function reconcile(actor) {
+  if ( !setting("enabled") || !setting("autoEquip") || !canEdit(actor) || reconciling.has(actor.id) ) return;
+  const worn = wornIds(actor);
+  const pending = actor.items.some(i => i.system.equipped && !worn.has(i.id) && inInventory(i) && (i.type !== "container") && !isCoinPile(i));
+  if ( !pending ) return;
+  reconciling.add(actor.id);
+  setTimeout(async () => {
+    try { await autoFill(actor, { loose: false, containers: false, quiet: true }); }
+    catch ( err ) { console.error(`${ID} | Abgleich`, err); }
+    finally { reconciling.delete(actor.id); }
+  }, 50);
 }
 
 function inject(app, element) {
@@ -1645,6 +1663,7 @@ function inject(app, element) {
   }
 
   if ( setting("hideSidebar") && (app.tabGroups?.primary === "inventory") ) app._toggleSidebar?.(true);
+  reconcile(actor);
 }
 
 /* -------------------------------------------- */
@@ -2057,6 +2076,8 @@ Hooks.once("ready", () => {
   });
 });
 
+const createTimers = new Map();
+
 // Geld-Änderungen von außen (Shops, Belohnungen, Würfe) in die Geldbörsen umleiten
 Hooks.on("preUpdateActor", (actor, changes, options) => {
   if ( options.aidPurse || (actor.type !== "character") || !purseActive() ) return;
@@ -2086,6 +2107,12 @@ function queueCoinDelta(actor, delta) {
 }
 
 Hooks.on("createItem", (item, options, userId) => {
+  if ( (userId === game.user.id) && !options.aid && item.system?.equipped && (item.parent instanceof Actor)
+    && (item.parent.type === "character") && setting("enabled") ) {
+    const actor = item.parent;
+    clearTimeout(createTimers.get(actor.id));
+    createTimers.set(actor.id, setTimeout(() => reconcile(actor), 300));
+  }
   if ( (userId !== game.user.id) || options.aid || !isCoinPile(item) ) return;
   const actor = item.parent;
   if ( !(actor instanceof Actor) || (actor.type !== "character") || !setting("enabled") ) return;
