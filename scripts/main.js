@@ -1302,9 +1302,18 @@ function renderContainers(app, actor) {
     { primary: id === primary, attached: true, collapsed: collapsedSet.has(id) }, editable));
   const loose = actor.itemTypes.container.filter(c => !attached.includes(c.id) && !c.system.container
     && !(purseActive() && isPurse(c)) && !d.containers.includes(c.id));
-  for ( const c of loose ) sections.push(renderContainerSection(app, c, { attached: false, collapsed: collapsedSet.has(c.id) }, editable));
   const title = `<h3 class="aid-unstowed-title">${esc(L("Containers.Unstowed"))}</h3>`;
-  return `<div class="aid-containers">${sections.join("")}</div>${title}`;
+  // Nicht angelegte Behälter liegen als ganz normale Gegenstände unter „Nicht verstaut“
+  const looseList = loose.length ? `<div class="aid-containers aid-unstowed-containers">
+      <div class="aid-container aid-loose-list">
+        <div class="aid-container-header aid-loose-header"><h3>${esc(L("Containers.Title"))}</h3></div>
+        <div class="aid-container-body">
+          <div class="aid-colheads"><span class="aid-spacer"></span><span class="aid-col-weight">${esc(L("Row.Weight"))}</span><span class="aid-col-qty">${esc(L("Row.Quantity"))}</span><span class="aid-col-use">${esc(L("Row.Uses"))}</span><span class="aid-col-ctl"></span></div>
+          <ol class="aid-list unlist">${loose.map(c => renderRow(app, c, editable)).join("")}</ol>
+        </div>
+      </div>
+    </div>` : "";
+  return `<div class="aid-containers">${sections.join("")}</div>${title}${looseList}`;
 }
 
 /* -------------------------------------------- */
@@ -1522,8 +1531,10 @@ function bindDoll(app, actor, aside) {
 
 function bindContainers(app, actor, tab) {
   const editable = app.isEditable && actor.isOwner;
-  const wrap = tab.querySelector(".aid-containers");
-  if ( !wrap ) return;
+  for ( const wrap of tab.querySelectorAll(".aid-containers") ) bindContainerWrap(app, actor, wrap, editable);
+}
+
+function bindContainerWrap(app, actor, wrap, editable) {
 
   wrap.querySelectorAll("[data-aid-mkpurse]").forEach(b => b.addEventListener("click", async ev => {
     ev.preventDefault();
@@ -1756,7 +1767,7 @@ function inject(app, element) {
 
   tab.classList.add("aid-tab");
   tab.querySelector(":scope > .aid-doll")?.remove();
-  tab.querySelectorAll(".aid-containers, .aid-unstowed-title").forEach(e => e.remove());
+  tab.querySelectorAll(".aid-containers, .aid-unstowed-title, .aid-unstowed-containers").forEach(e => e.remove());
 
   // Paperdoll links
   const tmp = document.createElement("div");

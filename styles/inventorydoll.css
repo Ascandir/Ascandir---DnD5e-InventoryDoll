@@ -650,3 +650,4 @@
   height: 28px; min-height: 0; padding: 0 12px; margin-bottom: 6px;
   font-size: 12px;
 }
+.aid-loose-header { cursor: default; }
