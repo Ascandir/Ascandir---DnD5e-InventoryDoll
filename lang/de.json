@@ -92,7 +92,8 @@
       "NotInventory": "{item} ist kein Gegenstand aus dem Inventar."
     },
     "Info": {
-      "AutoFilled": "Ausgerüstete Gegenstände wurden einsortiert."
+      "AutoFilled": "Ausgerüstete Gegenstände wurden einsortiert.",
+      "Stowed": "Weggelegt: {items}"
     },
     "Editor": {
       "Title": "Paperdoll-Layout (alle Charaktere)",

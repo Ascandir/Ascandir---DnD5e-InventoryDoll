@@ -92,7 +92,8 @@
       "NotInventory": "{item} is not an item from the inventory."
     },
     "Info": {
-      "AutoFilled": "Equipped items have been sorted in."
+      "AutoFilled": "Equipped items have been sorted in.",
+      "Stowed": "Put away: {items}"
     },
     "Editor": {
       "Title": "Paperdoll Layout (all characters)",

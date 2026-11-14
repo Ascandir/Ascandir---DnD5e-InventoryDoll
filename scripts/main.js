@@ -265,6 +265,13 @@ function equipUpdate(item, equipped = true) {
 
 /** Änderungen gesammelt schreiben (Flags + Gegenstände). */
 async function commit(actor, flagUpdate, itemUpdates) {
+  const stowed = itemUpdates.filter(u => u._aidStow && u._aidNotify).map(u => {
+    const it = actor.items.get(u._id);
+    const target = actor.items.get(u["system.container"]);
+    return it ? `${it.name}${target ? ` → ${target.name}` : ""}` : null;
+  }).filter(Boolean);
+  for ( const u of itemUpdates ) delete u._aidNotify;
+  if ( stowed.length ) ui.notifications.info(L("Info.Stowed", { items: stowed.join(", ") }));
   const merged = new Map();
   for ( const u of itemUpdates ) merged.set(u._id, { ...(merged.get(u._id) ?? {}), ...u });
   applyAttunement(actor, [...merged.values()]);
@@ -374,7 +381,7 @@ async function equipToSlot(actor, item, slotId, { force = false } = {}) {
   detach(d, sets, item.id);
   if ( prevId && (prevId !== item.id) ) {
     d.slots = d.slots.filter(e => e.s !== slotId);
-    updates.push(stowUpdate(actor.items.get(prevId), primaryContainer(actor, d)));
+    updates.push({ ...stowUpdate(actor.items.get(prevId), primaryContainer(actor, d)), _aidNotify: true });
   }
   d.slots = d.slots.filter(e => e.s !== slotId);
   d.slots.push({ s: slotId, i: item.id });
@@ -430,7 +437,7 @@ async function assignWeapon(actor, item, set, which) {
     const it = actor.items.get(id);
     if ( !it ) continue;
     if ( still.has(id) ) updates.push(equipUpdate(it, inActiveSet(data, id)));
-    else updates.push(stowUpdate(it, primaryContainer(actor, d)));
+    else updates.push({ ...stowUpdate(it, primaryContainer(actor, d)), _aidNotify: true });
   }
   await commit(actor, { ...dollUpdate(d), ...setsUpdate(data) }, updates);
 }
@@ -2077,6 +2084,8 @@ Hooks.once("ready", () => {
 });
 
 const createTimers = new Map();
+/** Gerade erst angelegte Gegenstände (Import, Shop) – die dürfen nichts Vorhandenes verdrängen. */
+const freshItems = new Set();
 
 // Geld-Änderungen von außen (Shops, Belohnungen, Würfe) in die Geldbörsen umleiten
 Hooks.on("preUpdateActor", (actor, changes, options) => {
@@ -2107,6 +2116,8 @@ function queueCoinDelta(actor, delta) {
 }
 
 Hooks.on("createItem", (item, options, userId) => {
+  freshItems.add(item.id);
+  setTimeout(() => freshItems.delete(item.id), 5000);
   if ( (userId === game.user.id) && !options.aid && item.system?.equipped && (item.parent instanceof Actor)
     && (item.parent.type === "character") && setting("enabled") ) {
     const actor = item.parent;
@@ -2133,7 +2144,11 @@ Hooks.on("updateItem", (item, changes, options, userId) => {
   if ( (userId !== game.user.id) || options.aid || !(item.parent instanceof Actor) || (item.parent.type !== "character") ) return;
   const actor = item.parent;
   if ( !setting("enabled") ) return;
-  if ( foundry.utils.getProperty(changes, "system.equipped") === true ) return autoEquip(actor, item);
+  if ( foundry.utils.getProperty(changes, "system.equipped") === true ) {
+    // Gerade gekauft/importiert: nur auf freie Plätze, nichts tauschen
+    if ( freshItems.has(item.id) ) return reconcile(actor);
+    return autoEquip(actor, item);
+  }
   const movedIn = foundry.utils.hasProperty(changes, "system.container") && changes.system.container;
   const unequipped = foundry.utils.getProperty(changes, "system.equipped") === false;
   if ( !movedIn && !unequipped ) return;
