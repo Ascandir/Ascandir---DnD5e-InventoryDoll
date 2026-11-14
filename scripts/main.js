@@ -296,9 +296,13 @@ async function commit(actor, flagUpdate, itemUpdates) {
   if ( stowed.length ) ui.notifications.info(L("Info.Stowed", { items: stowed.join(", ") }));
   const merged = new Map();
   for ( const u of itemUpdates ) merged.set(u._id, { ...(merged.get(u._id) ?? {}), ...u });
+  const stowedIds = [...merged.values()].filter(u => u._aidStow).map(u => u._id);
   applyAttunement(actor, [...merged.values()]);
   if ( flagUpdate && Object.keys(flagUpdate).length ) await actor.update(flagUpdate);
   if ( merged.size ) await actor.updateEmbeddedDocuments("Item", [...merged.values()], { aid: true });
+  for ( const id of stowedIds ) {
+    try { await mergeIntoStack(actor, id); } catch ( err ) { console.warn(`${ID} | Stapel`, err); }
+  }
   refreshHud(actor);
 }
 
@@ -1318,6 +1322,36 @@ function parseDrop(event) {
   return null;
 }
 
+/** Aus einem Stapel (Menge > 1) genau ein Stück abtrennen; der Rest bleibt, wo er ist. */
+async function splitOne(actor, item) {
+  const qty = Number(item.system.quantity ?? 1) || 1;
+  if ( qty <= 1 ) return item;
+  const data = item.toObject();
+  delete data._id;
+  foundry.utils.setProperty(data, "system.quantity", 1);
+  foundry.utils.setProperty(data, "system.container", null);
+  if ( data.system?.equipped !== undefined ) data.system.equipped = false;
+  const [created] = await actor.createEmbeddedDocuments("Item", [data], { aid: true });
+  await item.update({ "system.quantity": qty - 1 }, { aid: true });
+  debug("Stapel geteilt:", item.name, `${qty} → ${qty - 1} + 1`);
+  return created ?? item;
+}
+
+/** Abgelegten Gegenstand wieder auf einen gleichen Stapel im selben Behälter legen. */
+async function mergeIntoStack(actor, itemId) {
+  const item = actor.items.get(itemId);
+  if ( !item || (item.type === "container") ) return;
+  const worn = wornIds(actor);
+  if ( worn.has(item.id) ) return;
+  const same = actor.items.find(i => (i.id !== item.id) && (i.type === item.type) && (i.name === item.name)
+    && ((i.system.container ?? null) === (item.system.container ?? null)) && !worn.has(i.id)
+    && ((i.system.identifier ?? "") === (item.system.identifier ?? "")) && !i.system.equipped);
+  if ( !same ) return;
+  await same.update({ "system.quantity": (Number(same.system.quantity) || 0) + (Number(item.system.quantity) || 1) }, { aid: true });
+  await item.delete();
+  debug("Wieder auf den Stapel gelegt:", item.name);
+}
+
 async function resolveDropItem(actor, data) {
   if ( data?.type !== "Item" ) return null;
   const item = await Item.implementation.fromDropData(data).catch(() => null);
@@ -1469,8 +1503,9 @@ function bindDoll(app, actor, aside) {
       if ( item?.parent === actor ) await dropToGround(actor, item);
       return;
     }
-    const item = await resolveDropItem(actor, data);
+    let item = await resolveDropItem(actor, data);
     if ( !item ) return;
+    if ( ["slot", "weapon", "setpill", "container"].includes(kind) && !wornIds(actor).has(item.id) ) item = await splitOne(actor, item);
     if ( kind === "slot" ) return equipToSlot(actor, item, t.dataset.slot, { force: ev.shiftKey });
     if ( kind === "weapon" ) return assignWeapon(actor, item, t.dataset.set, t.dataset.which);
     if ( kind === "setpill" ) {
