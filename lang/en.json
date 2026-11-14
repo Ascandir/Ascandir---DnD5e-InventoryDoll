@@ -88,7 +88,8 @@
       "NoGM": "A GM must be online to drop items on the ground.",
       "NotReachable": "{item} is packed away and cannot be used in combat.",
       "NotReachableShort": "Not reachable in combat",
-      "NoAttunement": "No free attunement slot ({max}) – {item} is equipped without attunement."
+      "NoAttunement": "No free attunement slot ({max}) – {item} is equipped without attunement.",
+      "NotInventory": "{item} is not an item from the inventory."
     },
     "Info": {
       "AutoFilled": "Equipped items have been sorted in."

@@ -88,7 +88,8 @@
       "NoGM": "Zum Ablegen auf den Boden muss ein SL online sein.",
       "NotReachable": "{item} ist verstaut und kann im Kampf nicht benutzt werden.",
       "NotReachableShort": "Im Kampf nicht erreichbar",
-      "NoAttunement": "Kein freier Einstimmungsplatz ({max}) – {item} wird ohne Einstimmung angelegt."
+      "NoAttunement": "Kein freier Einstimmungsplatz ({max}) – {item} wird ohne Einstimmung angelegt.",
+      "NotInventory": "{item} ist kein Gegenstand aus dem Inventar."
     },
     "Info": {
       "AutoFilled": "Ausgerüstete Gegenstände wurden einsortiert."

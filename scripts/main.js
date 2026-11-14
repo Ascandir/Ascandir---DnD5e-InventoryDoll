@@ -149,8 +149,22 @@ const isFocus = item => !!item?.system.properties?.has?.("foc") || ["rod", "wand
 const isAmmo = item => (item?.type === "consumable") && (item.system.type?.value === "ammo");
 const isConsumable = item => item?.type === "consumable";
 
+/** Nur echte Gegenstände aus dem Inventar (keine Merkmale, Zauber, natürlichen Waffen, Fahrzeugteile). */
+const INVENTORY_TYPES = new Set(["weapon", "equipment", "consumable", "tool", "loot", "container"]);
+function inInventory(item) {
+  if ( !item || !INVENTORY_TYPES.has(item.type) ) return false;
+  if ( (Number(item.system.quantity ?? 1) || 0) <= 0 ) return false;
+  if ( item.type === "weapon" ) {
+    if ( ["natural", "siege"].includes(item.system.type?.value) ) return false;
+    if ( /unarmed|waffenlos/i.test(item.system.identifier || item.name) ) return false;
+  }
+  if ( ["natural", "vehicle"].includes(equipType(item)) ) return false;
+  return true;
+}
+
 /** Passt ein Gegenstand in einen Slot-Typ? */
 function matchesType(item, type) {
+  if ( !inInventory(item) ) return false;
   const forced = item.getFlag(ID, "slotType");
   if ( forced ) return (forced === type) || (type === "any");
   if ( type === "focus" ) return isFocus(item);
@@ -189,7 +203,11 @@ function getSets(actor) {
   if ( hudApi?.getWeaponSets ) {
     try {
       const r = hudApi.getWeaponSets(actor);
-      return { scope: HUD_ID, active: String(r.active ?? "1"), sets: foundry.utils.deepClone(r.sets) };
+      const sets = foundry.utils.deepClone(r.sets);
+      for ( const st of Object.values(sets) ) {
+        for ( const k of ["primary", "secondary"] ) if ( st[k] && !inInventory(actor.items.get(st[k])) ) st[k] = null;
+      }
+      return { scope: HUD_ID, active: String(r.active ?? "1"), sets };
     } catch ( err ) { console.warn(`${ID} | Combat HUD Waffensets`, err); }
   }
   const scope = hudActive() ? HUD_ID : ID;
@@ -197,7 +215,7 @@ function getSets(actor) {
   // Gleiche Vorbelegung wie das Combat HUD, solange noch nichts gespeichert ist
   const defaults = { 1: {}, 2: {}, 3: {} };
   if ( !f.sets ) {
-    const weapons = actor.itemTypes.weapon.slice().sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
+    const weapons = actor.itemTypes.weapon.filter(inInventory).sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
     const equipped = weapons.filter(w => w.system.equipped);
     const main = equipped[0] ?? weapons[0] ?? null;
     const off = equipped.find(w => (w !== main) && w.system.properties?.has?.("lgt")) ?? null;
@@ -207,8 +225,8 @@ function getSets(actor) {
   for ( const n of ["1", "2", "3"] ) {
     const s = f.sets?.[n] ?? defaults[n];
     sets[n] = {
-      primary: actor.items.get(s.primary) ? s.primary : null,
-      secondary: actor.items.get(s.secondary) ? s.secondary : null
+      primary: inInventory(actor.items.get(s.primary)) ? s.primary : null,
+      secondary: inInventory(actor.items.get(s.secondary)) ? s.secondary : null
     };
   }
   return { scope, active: String(f.active ?? "1"), sets };
@@ -377,6 +395,7 @@ async function assignContainer(actor, item, index) {
 }
 
 async function assignWeapon(actor, item, set, which) {
+  if ( !inInventory(item) ) return ui.notifications.warn(L("Warn.NotInventory", { item: item.name }));
   const okMain = item.type === "weapon";
   const okOff = okMain || isShield(item) || isFocus(item);
   if ( (which === "primary") && !okMain && okOff ) which = "secondary";
@@ -470,7 +489,7 @@ async function setAmmo(actor, ammoId) {
 
 /** Ist das ein echter, benutzbarer Gegenstand, den der Zauberstab von sich aus anlegen darf? */
 function autoCandidate(item) {
-  if ( (Number(item.system.quantity ?? 1) || 0) <= 0 ) return false;          // aufgebraucht / nicht vorhanden
+  if ( !inInventory(item) ) return false;                                      // nur echte Inventar-Gegenstände
   if ( item.system.identified === false ) return false;                      // noch unbekannt
   if ( isCoinPile(item) ) return false;
   if ( item.type === "weapon" ) {
@@ -499,7 +518,7 @@ async function autoFill(actor) {
   const free = layout.slots.filter(s => !slotItemId(d, s.id));
   for ( const item of actor.items ) {
     if ( worn.has(item.id) || !item.system.equipped ) continue;
-    if ( (Number(item.system.quantity ?? 1) || 0) <= 0 || isCoinPile(item) ) continue;
+    if ( !inInventory(item) || isCoinPile(item) ) continue;
     if ( item.type === "weapon" || isShield(item) ) {
       const s = data.sets[data.active];
       if ( item.type === "weapon" && !s.primary ) { s.primary = item.id; worn.add(item.id); }
@@ -556,7 +575,7 @@ async function autoFill(actor) {
  * kommt er automatisch auf den passenden Slot bzw. ins aktive Waffenset.
  */
 async function autoEquip(actor, item) {
-  if ( !setting("autoEquip") || !canEdit(actor) ) return;
+  if ( !setting("autoEquip") || !canEdit(actor) || !inInventory(item) ) return;
   if ( wornIds(actor).has(item.id) ) return;
   if ( item.type === "container" ) return;
 
