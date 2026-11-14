@@ -182,7 +182,24 @@
       "Debug": {
         "Name": "Protokoll (Fehlersuche)",
         "Hint": "Schreibt jede automatische Aktion der Paperdoll (ausrüsten, abrüsten, einsortieren) in die Browser-Konsole (F12)."
-      }
+      },
+      "GM": {
+        "Name": "Einstellungen für den Spielleiter",
+        "Label": "SL-Einstellungen öffnen",
+        "Hint": "Alles, was für alle Charaktere gilt: Inventar-Reiter, Ausrüsten, Einstimmung, Boden, Geldbörse. Nur der SL sieht das."
+      },
+      "Player": {
+        "Name": "Einstellungen für Spieler",
+        "Label": "Spieler-Einstellungen öffnen",
+        "Hint": "Persönliche Einstellungen: Symbolfarben der leeren Paperdoll-Felder pro Charakter, Protokoll zur Fehlersuche. Jeder Spieler stellt das für sich selbst ein."
+      },
+      "Group": {
+        "General": "Anzeige",
+        "Equip": "Ausrüsten",
+        "Purse": "Geldbörse",
+        "Misc": "Fehlersuche"
+      },
+      "Saved": "Einstellungen gespeichert."
     },
     "Purse": {
       "Title": "Geldbörse",

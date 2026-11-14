@@ -1959,6 +1959,67 @@ class LayoutEditor extends ApplicationV2 {
 }
 
 /* -------------------------------------------- */
+/*  Einstellungen für den Spielleiter           */
+/* -------------------------------------------- */
+
+const GM_SETTINGS = [
+  { group: "General", keys: ["enabled", "hideSidebar", "playersEquip", "hideWornInList", "emptyHighlight"] },
+  { group: "Equip", keys: ["newUnequipped", "autoEquip", "strictSlots", "autoAttune", "allowGround"] },
+  { group: "Purse", keys: ["purseEnabled", "purseCapacity"] }
+];
+
+class GMSettingsMenu extends ApplicationV2 {
+  static DEFAULT_OPTIONS = {
+    id: "aid-gm-settings",
+    classes: ["aid-settings", "dnd5e2"],
+    window: { title: "AID.Settings.GM.Name", icon: "fa-solid fa-crown", resizable: true },
+    position: { width: 560, height: "auto" }
+  };
+
+  async _renderHTML() {
+    const field = key => {
+      const cfg = game.settings.settings.get(`${ID}.${key}`);
+      const v = setting(key);
+      const name = esc(game.i18n.localize(cfg.name));
+      const hint = esc(game.i18n.localize(cfg.hint ?? ""));
+      let input;
+      if ( cfg.choices ) {
+        input = `<select data-key="${key}">${Object.entries(cfg.choices).map(([k, l]) =>
+          `<option value="${k}" ${k === v ? "selected" : ""}>${esc(game.i18n.localize(l))}</option>`).join("")}</select>`;
+      } else if ( cfg.type === Boolean ) {
+        input = `<input type="checkbox" data-key="${key}" ${v ? "checked" : ""}>`;
+      } else if ( cfg.type === Number ) {
+        const r = cfg.range ?? {};
+        input = `<input type="number" data-key="${key}" value="${v}" ${r.min != null ? `min="${r.min}"` : ""} ${r.max != null ? `max="${r.max}"` : ""} ${r.step ? `step="${r.step}"` : ""}>`;
+      } else input = `<input type="text" data-key="${key}" value="${esc(v)}">`;
+      return `<div class="aid-set-row"><label><span class="aid-set-name">${name}</span>${input}</label><p class="aid-ed-hint">${hint}</p></div>`;
+    };
+    const groups = GM_SETTINGS.map(g => `<fieldset><legend>${esc(L(`Settings.Group.${g.group}`))}</legend>${g.keys.map(field).join("")}</fieldset>`).join("");
+    return `<div class="aid-settings-body">
+        ${groups}
+        <button type="button" data-open-editor><i class="fa-solid fa-person-rays" inert></i> ${esc(L("Settings.Editor.Label"))}</button>
+        <div class="aid-ed-buttons"><button type="button" class="bright" data-save><i class="fa-solid fa-floppy-disk" inert></i> ${esc(L("Editor.Save"))}</button></div>
+      </div>`;
+  }
+
+  _replaceHTML(result, content) {
+    content.innerHTML = result;
+    content.querySelector("[data-open-editor]")?.addEventListener("click", () => new LayoutEditor().render({ force: true }));
+    content.querySelector("[data-save]")?.addEventListener("click", async () => {
+      for ( const el of content.querySelectorAll("[data-key]") ) {
+        const key = el.dataset.key;
+        const cfg = game.settings.settings.get(`${ID}.${key}`);
+        let v = el.type === "checkbox" ? el.checked : el.value;
+        if ( cfg.type === Number ) v = Number(v);
+        if ( v !== setting(key) ) await game.settings.set(ID, key, v);
+      }
+      ui.notifications.info(L("Settings.Saved"));
+      this.close();
+    });
+  }
+}
+
+/* -------------------------------------------- */
 /*  Symbolfarben (pro Spieler und Charakter)    */
 /* -------------------------------------------- */
 
@@ -1966,7 +2027,7 @@ class IconColorMenu extends ApplicationV2 {
   static DEFAULT_OPTIONS = {
     id: "aid-icon-colors",
     classes: ["aid-colors", "dnd5e2"],
-    window: { title: "AID.Colors.Title", icon: "fa-solid fa-palette" },
+    window: { title: "AID.Settings.Player.Name", icon: "fa-solid fa-user" },
     position: { width: 440, height: "auto" }
   };
 
@@ -1991,11 +2052,16 @@ class IconColorMenu extends ApplicationV2 {
     const presets = ["#fff4d6", "#ffffff", "#c8b48c", "#1b1c20", "#e04848", "#4cc3ff", "#7bdc6b", "#c07bff"]
       .map(c => `<button type="button" class="aid-swatch" style="background:${c}" data-preset="${c}" aria-label="${c}"></button>`).join("");
     return `<div class="aid-colors-body">
+        <h3 class="aid-colors-title"><i class="fa-solid fa-palette" inert></i> ${esc(L("Colors.Title"))}</h3>
         <p class="aid-ed-hint">${esc(L("Colors.Hint"))}</p>
         <div class="aid-color-row default"><span class="aid-color-name">${esc(L("Colors.Default"))}</span>
           <input type="color" value="${esc(this.fallback)}" data-default aria-label="${esc(L("Colors.Default"))}"></div>
         <div class="aid-swatches"><span>${esc(L("Colors.Presets"))}</span>${presets}</div>
         ${rows}
+        <fieldset><legend>${esc(L("Settings.Group.Misc"))}</legend>
+          <div class="aid-set-row"><label><span class="aid-set-name">${esc(L("Settings.Debug.Name"))}</span><input type="checkbox" data-debug ${setting("debug") ? "checked" : ""}></label>
+          <p class="aid-ed-hint">${esc(L("Settings.Debug.Hint"))}</p></div>
+        </fieldset>
         <div class="aid-ed-buttons"><button type="button" class="bright" data-save><i class="fa-solid fa-floppy-disk" inert></i> ${esc(L("Editor.Save"))}</button></div>
       </div>`;
   }
@@ -2019,6 +2085,8 @@ class IconColorMenu extends ApplicationV2 {
     }));
     content.querySelector("[data-save]")?.addEventListener("click", async () => {
       await game.settings.set(ID, "iconColorDefault", this.fallback);
+      const dbg = !!content.querySelector("[data-debug]")?.checked;
+      if ( dbg !== setting("debug") ) await game.settings.set(ID, "debug", dbg);
       await game.user.unsetFlag(ID, "iconColors");
       await game.user.setFlag(ID, "iconColors", this.colors);
       rerenderSheets();
@@ -2038,15 +2106,19 @@ function rerenderSheets() {
 }
 
 Hooks.once("init", () => {
-  const reg = (key, data) => game.settings.register(ID, key, { scope: "world", config: true, ...data });
+  const reg = (key, data) => game.settings.register(ID, key, { scope: "world", ...data, config: false });
   game.settings.register(ID, "layout", { scope: "world", config: false, type: Object, default: DEFAULT_LAYOUT, onChange: rerenderSheets });
+  game.settings.registerMenu(ID, "gmSettings", {
+    name: "AID.Settings.GM.Name", label: "AID.Settings.GM.Label", hint: "AID.Settings.GM.Hint",
+    icon: "fa-solid fa-crown", type: GMSettingsMenu, restricted: true
+  });
   game.settings.registerMenu(ID, "layoutEditor", {
     name: "AID.Settings.Editor.Name", label: "AID.Settings.Editor.Label", hint: "AID.Settings.Editor.Hint",
     icon: "fa-solid fa-person-rays", type: LayoutEditor, restricted: true
   });
   game.settings.registerMenu(ID, "iconColors", {
-    name: "AID.Settings.Colors.Name", label: "AID.Settings.Colors.Label", hint: "AID.Settings.Colors.Hint",
-    icon: "fa-solid fa-palette", type: IconColorMenu, restricted: false
+    name: "AID.Settings.Player.Name", label: "AID.Settings.Player.Label", hint: "AID.Settings.Player.Hint",
+    icon: "fa-solid fa-user", type: IconColorMenu, restricted: false
   });
   game.settings.register(ID, "iconColorDefault", { scope: "client", config: false, type: String, default: "#fff4d6", onChange: rerenderSheets });
   reg("enabled", { name: "AID.Settings.Enabled.Name", hint: "AID.Settings.Enabled.Hint", type: Boolean, default: true, onChange: rerenderSheets });

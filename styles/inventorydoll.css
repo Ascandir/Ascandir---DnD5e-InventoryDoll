@@ -632,3 +632,13 @@
 
 /* ---------- v0.2.25: Rückfall auf die dnd5e-Behälteranzeige bei Fehlern ---------- */
 .dnd5e2.sheet.actor.character .tab.aid-tab.aid-fallback .top .containers { display: flex !important; }
+
+/* ---------- v0.2.26: getrennte Einstellungsfenster ---------- */
+.aid-settings-body, .aid-colors-body { display: flex; flex-direction: column; gap: 10px; padding: 4px; }
+.aid-settings-body fieldset, .aid-colors-body fieldset { display: flex; flex-direction: column; gap: 8px; margin: 0; }
+.aid-set-row label { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.aid-set-row .aid-set-name { font-weight: bold; }
+.aid-set-row input[type=number] { width: 90px; flex: none; }
+.aid-set-row select { width: 220px; flex: none; }
+.aid-set-row .aid-ed-hint { margin: 2px 0 0; }
+.aid-colors-title { margin: 0; border: none; font-size: 14px; display: flex; align-items: center; gap: 6px; }

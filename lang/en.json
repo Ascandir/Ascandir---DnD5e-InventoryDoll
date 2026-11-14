@@ -182,7 +182,24 @@
       "Debug": {
         "Name": "Debug log",
         "Hint": "Writes every automatic action of the paperdoll (equip, unequip, sort in) to the browser console (F12)."
-      }
+      },
+      "GM": {
+        "Name": "Settings for the Game Master",
+        "Label": "Open GM settings",
+        "Hint": "Everything that applies to all characters: inventory tab, equipping, attunement, ground, purse. Only the GM sees this."
+      },
+      "Player": {
+        "Name": "Settings for players",
+        "Label": "Open player settings",
+        "Hint": "Personal settings: icon colours of empty paperdoll slots per character, debug log. Every player can change these for themselves."
+      },
+      "Group": {
+        "General": "Display",
+        "Equip": "Equipping",
+        "Purse": "Purse",
+        "Misc": "Troubleshooting"
+      },
+      "Saved": "Settings saved."
     },
     "Purse": {
       "Title": "Purse",
