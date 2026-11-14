@@ -178,6 +178,10 @@
       "NewUnequipped": {
         "Name": "Neue Gegenstände unausgerüstet",
         "Hint": "Gegenstände aus Importen (z. B. Plutonium), Shops oder von anderen Charakteren landen im Inventar und werden nicht ausgerüstet."
+      },
+      "Debug": {
+        "Name": "Protokoll (Fehlersuche)",
+        "Hint": "Schreibt jede automatische Aktion der Paperdoll (ausrüsten, abrüsten, einsortieren) in die Browser-Konsole (F12)."
       }
     },
     "Purse": {

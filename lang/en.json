@@ -178,6 +178,10 @@
       "NewUnequipped": {
         "Name": "New items arrive unequipped",
         "Hint": "Items added by importers (e.g. Plutonium), shops or other characters are placed in the inventory and are not equipped."
+      },
+      "Debug": {
+        "Name": "Debug log",
+        "Hint": "Writes every automatic action of the paperdoll (equip, unequip, sort in) to the browser console (F12)."
       }
     },
     "Purse": {

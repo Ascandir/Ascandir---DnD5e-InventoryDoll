@@ -8,6 +8,7 @@ const HUD_ID = "ascandir-combat-hud";
 const LOOT_ID = "ascandir-dnd5e-lootplacement";
 const SOCKET = `module.${ID}`;
 
+const debug = (...args) => { try { if ( game.settings.get(ID, "debug") ) console.log(`${ID} |`, ...args); } catch { /* vor init */ } };
 const L = (key, data) => (data ? game.i18n.format(`AID.${key}`, data) : game.i18n.localize(`AID.${key}`));
 const setting = key => game.settings.get(ID, key);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[c]);
@@ -571,11 +572,32 @@ async function autoFill(actor, { loose = true, containers = true, quiet = false 
       if ( off ) { s.secondary = off.id; worn.add(off.id); updates.push(equipUpdate(off, true)); }
     }
   }
-  if ( containers && !d.containers.some(Boolean) ) {
-    const packs = actor.itemTypes.container.filter(c => !c.system.container && !isPurse(c) && ((Number(c.system.quantity ?? 1) || 0) > 0));
-    packs.sort((a, b) => (nameHas(b, ["backpack", "rucksack"]) ? 1 : 0) - (nameHas(a, ["backpack", "rucksack"]) ? 1 : 0));
-    d.containers = packs.slice(0, layout.containerSlots).map(c => c.id);
-    for ( const c of packs.slice(0, layout.containerSlots) ) updates.push(equipUpdate(c, true));
+  if ( containers ) {
+    // Freie Behälter-Slots füllen: Rucksack zuerst (Primär), dann Köcher, Beutel, Wasserschlauch, Rest.
+    // Behälter, die in einem anderen Behälter liegen (z. B. Wasserschlauch im gekauften Rucksack), werden herausgenommen.
+    while ( d.containers.length < layout.containerSlots ) d.containers.push(null);
+    const prio = c => {
+      if ( nameHas(c, ["backpack", "rucksack"]) ) return 0;
+      if ( nameHas(c, ["quiver", "köcher", "bolt case", "bolzen"]) ) return 1;
+      if ( nameHas(c, ["pouch", "beutel", "belt"]) ) return 2;
+      if ( nameHas(c, ["waterskin", "wasserschlauch", "flask", "flasche"]) ) return 3;
+      return c.system.container ? 5 : 4;
+    };
+    const candidates = actor.itemTypes.container
+      .filter(c => !d.containers.includes(c.id) && !isPurse(c) && inInventory(c))
+      .sort((x, y) => prio(x) - prio(y));
+    // Primär-Slot bevorzugt mit einem Rucksack belegen
+    if ( !d.containers[0] ) {
+      const pack = candidates.find(c => prio(c) === 0);
+      if ( pack ) { d.containers[0] = pack.id; candidates.splice(candidates.indexOf(pack), 1); updates.push(equipUpdate(pack, true)); }
+    }
+    for ( let i = 0; i < layout.containerSlots && candidates.length; i++ ) {
+      if ( d.containers[i] ) continue;
+      const c = candidates.shift();
+      // Nicht einen Behälter anbinden, der in einem Behälter liegt, den wir gerade selbst einsortiert haben, wenn nur der übrig bleibt
+      d.containers[i] = c.id;
+      updates.push(equipUpdate(c, true));
+    }
   }
   await commit(actor, { ...dollUpdate(d), ...setsUpdate(data) }, updates);
   if ( !quiet ) ui.notifications.info(L("Info.AutoFilled"));
@@ -588,6 +610,7 @@ async function autoFill(actor, { loose = true, containers = true, quiet = false 
  */
 async function autoEquip(actor, item) {
   if ( !setting("autoEquip") || !canEdit(actor) || !inInventory(item) ) return;
+  debug("Automatisch auf die Paperdoll (Ausrüsten in der Liste):", item.name);
   if ( wornIds(actor).has(item.id) ) return;
   if ( item.type === "container" ) return;
 
@@ -1608,13 +1631,13 @@ function fitDoll(tab, aside) {
  */
 const reconciling = new Set();
 function reconcile(actor) {
-  if ( !setting("enabled") || !setting("autoEquip") || !canEdit(actor) || reconciling.has(actor.id) ) return;
+  if ( !setting("enabled") || !setting("autoEquip") || setting("newUnequipped") || !canEdit(actor) || reconciling.has(actor.id) ) return;
   const worn = wornIds(actor);
   const pending = actor.items.some(i => i.system.equipped && !worn.has(i.id) && !freshItems.has(i.id) && inInventory(i) && (i.type !== "container") && !isCoinPile(i));
   if ( !pending ) return;
   reconciling.add(actor.id);
   setTimeout(async () => {
-    try { await autoFill(actor, { loose: false, containers: false, quiet: true }); }
+    try { debug("Abgleich ausgerüsteter Gegenstände für", actor.name); await autoFill(actor, { loose: false, containers: false, quiet: true }); }
     catch ( err ) { console.error(`${ID} | Abgleich`, err); }
     finally { reconciling.delete(actor.id); }
   }, 50);
@@ -1645,17 +1668,27 @@ function inject(app, element) {
   tab.classList.toggle("aid-purse-mode", purseActive());
   tab.querySelectorAll(".aid-purses, .aid-cbar").forEach(e => e.remove());
   if ( inv && list ) {
+    const parts = [
+      ["Behälter-Slots", () => renderContainerSlots(actor, getDoll(actor), app.isEditable && canEdit(actor))],
+      ["Geldbörsen", () => (purseActive() ? renderPurses(app, actor) : "")],
+      ["Behälterlisten", () => renderContainers(app, actor)]
+    ];
+    let failed = false;
     const box = document.createElement("div");
-    box.innerHTML = renderContainerSlots(actor, getDoll(actor), app.isEditable && canEdit(actor))
-      + (purseActive() ? renderPurses(app, actor) : "") + renderContainers(app, actor);
+    for ( const [name, fn] of parts ) {
+      try { box.insertAdjacentHTML("beforeend", fn()); }
+      catch ( err ) { failed = true; console.error(`${ID} | ${name} konnten nicht angezeigt werden`, err); }
+    }
     for ( const node of [...box.children] ) inv.insertBefore(node, list);
-    bindContainers(app, actor, tab);
-    bindPurses(app, actor, tab);
-    const bar = tab.querySelector(".aid-cbar");
-    if ( bar ) bindDoll(app, actor, bar);
+    // Wenn die Behälterlisten scheitern, die normale dnd5e-Behälteranzeige wieder einblenden
+    tab.classList.toggle("aid-fallback", failed);
+    for ( const [name, fn] of [["Behälter", () => bindContainers(app, actor, tab)], ["Geldbörsen", () => bindPurses(app, actor, tab)],
+      ["Behälter-Slots", () => { const bar = tab.querySelector(".aid-cbar"); if ( bar ) bindDoll(app, actor, bar); }]] ) {
+      try { fn(); } catch ( err ) { console.error(`${ID} | ${name}`, err); }
+    }
   }
-  hideWornRows(actor, tab);
-  bindSearch(tab);
+  try { hideWornRows(actor, tab); } catch ( err ) { console.error(`${ID} | Liste`, err); }
+  try { bindSearch(tab); } catch ( err ) { console.error(`${ID} | Suche`, err); }
   // Münzhaufen in der normalen Liste: Klick packt ihn in die Geldbörse
   for ( const li of tab.querySelectorAll(".inventory-element .items-list li.item[data-item-id]") ) {
     const pile = actor.items.get(li.dataset.itemId);
@@ -2032,6 +2065,7 @@ Hooks.once("init", () => {
   reg("purseEnabled", { name: "AID.Settings.Purse.Name", hint: "AID.Settings.Purse.Hint", type: Boolean, default: false, onChange: onPurseToggle });
   game.settings.register(ID, "purseDenoms", { scope: "world", config: false, type: Array, default: null, onChange: rerenderSheets });
   reg("purseCapacity", { name: "AID.Settings.PurseCap.Name", hint: "AID.Settings.PurseCap.Hint", type: Number, default: 300, range: { min: 10, max: 10000, step: 10 }, onChange: rerenderSheets });
+  reg("debug", { name: "AID.Settings.Debug.Name", hint: "AID.Settings.Debug.Hint", type: Boolean, default: false, scope: "client" });
   reg("allowGround", { name: "AID.Settings.Ground.Name", hint: "AID.Settings.Ground.Hint", type: Boolean, default: true, onChange: rerenderSheets });
 });
 
@@ -2121,12 +2155,20 @@ Hooks.on("preCreateItem", (item, data, options, userId) => {
   if ( (userId !== game.user.id) || options.aid || !setting("enabled") || !setting("newUnequipped") ) return;
   const actor = item.parent;
   if ( !(actor instanceof Actor) || (actor.type !== "character") ) return;
-  if ( item.system?.equipped ) item.updateSource({ "system.equipped": false });
+  if ( item.system?.equipped ) {
+    debug("Vor dem Anlegen abgerüstet:", item.name);
+    item.updateSource({ "system.equipped": false });
+  }
 });
 
 Hooks.on("createItem", (item, options, userId) => {
   freshItems.add(item.id);
   setTimeout(() => freshItems.delete(item.id), 5000);
+  if ( (userId === game.user.id) && !options.aid && item.system?.equipped && (item.parent instanceof Actor)
+    && (item.parent.type === "character") && setting("enabled") && setting("newUnequipped") ) {
+    debug("Neu angelegt und ausgerüstet → wird abgerüstet:", item.name);
+    item.update({ "system.equipped": false }, { aid: true });
+  }
   if ( (userId !== game.user.id) || options.aid || !isCoinPile(item) ) return;
   const actor = item.parent;
   if ( !(actor instanceof Actor) || (actor.type !== "character") || !setting("enabled") ) return;
