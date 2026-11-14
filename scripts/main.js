@@ -189,7 +189,7 @@ function matchesType(item, type) {
 function getDoll(actor) {
   const f = actor.getFlag(ID, "doll") ?? {};
   const slots = (Array.isArray(f.slots) ? f.slots : []).filter(e => e?.s && actor.items.get(e.i));
-  const containers = Array.isArray(f.containers) ? f.containers.map(c => (actor.items.get(c)?.type === "container" ? c : null)) : [];
+  const containers = Array.isArray(f.containers) ? f.containers.map(c => (fitsContainerSlot(actor.items.get(c)) ? c : null)) : [];
   return { slots, containers, ammo: f.ammo ?? null };
 }
 
@@ -238,7 +238,17 @@ const setIds = data => new Set(Object.values(data.sets).flatMap(s => [s.primary,
 const inActiveSet = (data, id) => [data.sets[data.active]?.primary, data.sets[data.active]?.secondary].includes(id);
 
 function primaryContainer(actor, d, exclude = null) {
-  return d.containers.find(c => c && (c !== exclude) && actor.items.get(c)) ?? null;
+  return d.containers.find(c => c && (c !== exclude) && (actor.items.get(c)?.type === "container")) ?? null;
+}
+
+/** Gürtel-Gegenstände, die auch ohne dnd5e-Behältertyp in einen Behälter-Slot dürfen. */
+const BELT_WORDS = ["waterskin", "wasserschlauch", "flask", "flasche", "bottle", "canteen", "feldflasche", "quiver", "köcher",
+  "pouch", "beutel", "case", "hülle", "bandolier", "scroll case", "map case", "kartenrolle"];
+function fitsContainerSlot(item) {
+  if ( !item || !inInventory(item) ) return false;
+  if ( item.type === "container" ) return true;
+  if ( item.getFlag(ID, "slotContainer") ) return true;
+  return nameHas(item, BELT_WORDS);
 }
 
 /** Alle Gegenstände, die gerade „am Körper“ sind (Slots, Waffensets, angebundene Behälter). */
@@ -415,8 +425,11 @@ async function equipToSlot(actor, item, slotId, { force = false } = {}) {
   await commit(actor, { ...dollUpdate(d), ...setsUpdate(sets) }, updates);
 }
 
-async function assignContainer(actor, item, index) {
-  if ( item.type !== "container" ) return ui.notifications.warn(L("Warn.NotContainer", { item: item.name }));
+async function assignContainer(actor, item, index, { force = false } = {}) {
+  if ( !fitsContainerSlot(item) ) {
+    if ( force && game.user.isGM && inInventory(item) ) await item.setFlag(ID, "slotContainer", true);
+    else return ui.notifications.warn(L("Warn.NotContainer", { item: item.name }));
+  }
   const layout = getLayout();
   const d = getDoll(actor);
   const sets = getSets(actor);
@@ -1296,7 +1309,7 @@ function renderContainers(app, actor) {
   const editable = app.isEditable && actor.isOwner;
   const d = getDoll(actor);
   const collapsedSet = new Set(game.user.getFlag(ID, `collapsed.${actor.id}`) ?? []);
-  const attached = d.containers.filter(id => id && !(purseActive() && isPurse(actor.items.get(id))));
+  const attached = d.containers.filter(id => id && (actor.items.get(id)?.type === "container") && !(purseActive() && isPurse(actor.items.get(id))));
   const primary = primaryContainer(actor, d);
   const sections = attached.map(id => renderContainerSection(app, actor.items.get(id),
     { primary: id === primary, attached: true, collapsed: collapsedSet.has(id) }, editable));
@@ -1525,7 +1538,7 @@ function bindDoll(app, actor, aside) {
       else if ( main && (main.id !== item.id) && !isTwoHanded(main) && !isTwoHanded(item) && !st.secondary ) which = "secondary";
       return assignWeapon(actor, item, t.dataset.set, which);
     }
-    if ( kind === "container" ) return assignContainer(actor, item, Number(t.dataset.index));
+    if ( kind === "container" ) return assignContainer(actor, item, Number(t.dataset.index), { force: ev.shiftKey });
   });
 }
 

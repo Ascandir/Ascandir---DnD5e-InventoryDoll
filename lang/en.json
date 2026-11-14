@@ -81,7 +81,7 @@
     },
     "Warn": {
       "WrongSlot": "{item} does not fit into the slot {slot}. (GM: hold Shift to assign anyway.)",
-      "NotContainer": "{item} is not a container.",
+      "NotContainer": "{item} does not fit into a container slot. (GM: hold Shift to allow it anyway.)",
       "NotWeapon": "{item} cannot be held in this hand.",
       "ContainerNotEmpty": "Empty the container before dropping it on the ground.",
       "NoToken": "Your character needs a token on the current scene.",
