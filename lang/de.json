@@ -93,7 +93,8 @@
     },
     "Info": {
       "AutoFilled": "Ausgerüstete Gegenstände wurden einsortiert.",
-      "Stowed": "Weggelegt: {items}"
+      "Stowed": "Weggelegt: {items}",
+      "Repaired": "Behälter repariert, die ineinander steckten: {items} – sie liegen jetzt unter „Nicht verstaut“."
     },
     "Editor": {
       "Title": "Paperdoll-Layout (alle Charaktere)",

@@ -250,9 +250,30 @@ function wornIds(actor) {
   return ids;
 }
 
+/** Liegt der Behälter `containerId` in `itemId` (direkt oder tiefer) bzw. ist er es selbst? */
+function isInside(actor, containerId, itemId) {
+  let id = containerId;
+  const seen = new Set();
+  while ( id && !seen.has(id) ) {
+    if ( id === itemId ) return true;
+    seen.add(id);
+    id = actor.items.get(id)?.system.container;
+  }
+  return !!id && seen.has(id); // Schleife gefunden
+}
+
+/** Gültiges Ablage-Ziel für einen Gegenstand (kein Behälter in sich selbst, keine Schleifen). */
+function safeTarget(actor, item, containerId) {
+  if ( !containerId || !actor.items.get(containerId) ) return null;
+  if ( (item.type === "container") && isInside(actor, containerId, item.id) ) return null;
+  if ( containerId === item.id ) return null;
+  return containerId;
+}
+
 /** Update, um einen Gegenstand abzulegen (in einen Behälter oder lose). */
 function stowUpdate(item, containerId) {
-  const u = { _id: item.id, _aidStow: true, "system.container": (containerId && (containerId !== item.id)) ? containerId : null };
+  const target = item.parent ? safeTarget(item.parent, item, containerId) : ((containerId && (containerId !== item.id)) ? containerId : null);
+  const u = { _id: item.id, _aidStow: true, "system.container": target };
   if ( item.system.equipped !== undefined ) u["system.equipped"] = false;
   return u;
 }
@@ -475,7 +496,8 @@ async function unequip(actor, item, containerId) {
   const d = getDoll(actor);
   const sets = getSets(actor);
   detach(d, sets, item.id);
-  const target = containerId === undefined ? primaryContainer(actor, d, item.id) : containerId;
+  let target = containerId === undefined ? primaryContainer(actor, d, item.id) : containerId;
+  if ( (item.type === "container") && (containerId === undefined) ) target = null;
   await commit(actor, { ...dollUpdate(d), ...setsUpdate(sets) }, [stowUpdate(item, target)]);
 }
 
@@ -1624,6 +1646,21 @@ function fitDoll(tab, aside) {
   fit();
 }
 
+/** Behälter, die (über Umwege) in sich selbst liegen, werden wieder lose gelegt – sonst sind sie unsichtbar. */
+const repairing = new Set();
+function repairLoops(actor) {
+  if ( !actor.isOwner || repairing.has(actor.id) ) return;
+  const broken = actor.items.filter(i => i.system?.container && isInside(actor, i.system.container, i.id));
+  if ( !broken.length ) return;
+  repairing.add(actor.id);
+  const ids = new Set(broken.filter(i => i.type === "container").map(i => i.id));
+  const fix = [...(ids.size ? ids : new Set(broken.map(i => i.id)))].map(id => ({ _id: id, "system.container": null }));
+  actor.updateEmbeddedDocuments("Item", fix, { aid: true })
+    .then(() => ui.notifications.info(L("Info.Repaired", { items: fix.map(u => actor.items.get(u._id)?.name).filter(Boolean).join(", ") })))
+    .catch(err => console.error(`${ID} | Reparatur`, err))
+    .finally(() => repairing.delete(actor.id));
+}
+
 /**
  * Gegenstände, die schon als „ausgerüstet“ ankommen (Plutonium-Import, altes Inventar), auf freie passende
  * Slots bzw. ins aktive Waffenset legen. Belegte Slots werden nicht getauscht; was keinen Platz findet,
@@ -1703,6 +1740,7 @@ function inject(app, element) {
   }
 
   if ( setting("hideSidebar") && (app.tabGroups?.primary === "inventory") ) app._toggleSidebar?.(true);
+  try { repairLoops(actor); } catch ( err ) { console.error(`${ID} | Reparatur`, err); }
   reconcile(actor);
 }
 

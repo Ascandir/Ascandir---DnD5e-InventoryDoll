@@ -93,7 +93,8 @@
     },
     "Info": {
       "AutoFilled": "Equipped items have been sorted in.",
-      "Stowed": "Put away: {items}"
+      "Stowed": "Put away: {items}",
+      "Repaired": "Repaired containers that were inside each other: {items} – they are now unstowed."
     },
     "Editor": {
       "Title": "Paperdoll Layout (all characters)",
