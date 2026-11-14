@@ -468,6 +468,27 @@ async function setAmmo(actor, ammoId) {
   await commit(actor, dollUpdate(d), updates);
 }
 
+/** Ist das ein echter, benutzbarer Gegenstand, den der Zauberstab von sich aus anlegen darf? */
+function autoCandidate(item) {
+  if ( (Number(item.system.quantity ?? 1) || 0) <= 0 ) return false;          // aufgebraucht / nicht vorhanden
+  if ( item.system.identified === false ) return false;                      // noch unbekannt
+  if ( isCoinPile(item) ) return false;
+  if ( item.type === "weapon" ) {
+    const t = item.system.type?.value;
+    if ( ["natural", "improv", "siege"].includes(t) ) return false;           // Waffenloser Schlag, Klauen, Behelfswaffen
+    if ( /unarmed|waffenlos/i.test(item.system.identifier ?? item.name) ) return false;
+  }
+  // Keine Übung (Proficiency) mit Waffe/Rüstung/Schild → nicht automatisch anlegen
+  if ( ["weapon", "equipment"].includes(item.type) && ("proficiencyMultiplier" in item.system) ) {
+    const et = equipType(item);
+    const needsProf = (item.type === "weapon") || ["light", "medium", "heavy", "shield"].includes(et);
+    if ( needsProf && !(Number(item.system.proficiencyMultiplier) > 0) ) return false;
+  }
+  // Magische Gegenstände mit Einstimmungspflicht nur, wenn schon eingestimmt
+  if ( (item.system.attunement === "required") && !item.system.attuned ) return false;
+  return true;
+}
+
 /** Ausgerüstete, noch nicht einsortierte Gegenstände automatisch verteilen. */
 async function autoFill(actor) {
   const layout = getLayout();
@@ -478,6 +499,7 @@ async function autoFill(actor) {
   const free = layout.slots.filter(s => !slotItemId(d, s.id));
   for ( const item of actor.items ) {
     if ( worn.has(item.id) || !item.system.equipped ) continue;
+    if ( (Number(item.system.quantity ?? 1) || 0) <= 0 || isCoinPile(item) ) continue;
     if ( item.type === "weapon" || isShield(item) ) {
       const s = data.sets[data.active];
       if ( item.type === "weapon" && !s.primary ) { s.primary = item.id; worn.add(item.id); }
@@ -498,7 +520,7 @@ async function autoFill(actor) {
   for ( const slot of [...free] ) {
     if ( ["trinket", "any"].includes(slot.type) ) continue;
     const item = actor.items.find(i => !worn.has(i.id) && !i.system.container && (i.system.equipped !== undefined)
-      && matchesType(i, slot.type));
+      && autoCandidate(i) && matchesType(i, slot.type));
     if ( !item ) continue;
     free.splice(free.indexOf(slot), 1);
     d.slots.push({ s: slot.id, i: item.id });
@@ -508,19 +530,19 @@ async function autoFill(actor) {
   // Waffen: leeres aktives Set mit nicht verstauten Waffen füllen
   {
     const s = data.sets[data.active];
-    const loose = actor.itemTypes.weapon.filter(w => !worn.has(w.id) && !w.system.container);
+    const loose = actor.itemTypes.weapon.filter(w => !worn.has(w.id) && !w.system.container && autoCandidate(w));
     if ( !s.primary && loose.length ) {
       const w = loose.shift();
       s.primary = w.id; worn.add(w.id); updates.push(equipUpdate(w, true));
     }
     if ( !s.secondary && !isTwoHanded(actor.items.get(s.primary)) ) {
-      const off = actor.items.find(i => !worn.has(i.id) && !i.system.container && isShield(i))
+      const off = actor.items.find(i => !worn.has(i.id) && !i.system.container && isShield(i) && autoCandidate(i))
         ?? loose.find(w => w.system.properties?.has?.("lgt") && !isTwoHanded(w));
       if ( off ) { s.secondary = off.id; worn.add(off.id); updates.push(equipUpdate(off, true)); }
     }
   }
   if ( !d.containers.some(Boolean) ) {
-    const packs = actor.itemTypes.container.filter(c => !c.system.container);
+    const packs = actor.itemTypes.container.filter(c => !c.system.container && !isPurse(c) && ((Number(c.system.quantity ?? 1) || 0) > 0));
     packs.sort((a, b) => (nameHas(b, ["backpack", "rucksack"]) ? 1 : 0) - (nameHas(a, ["backpack", "rucksack"]) ? 1 : 0));
     d.containers = packs.slice(0, layout.containerSlots).map(c => c.id);
     for ( const c of packs.slice(0, layout.containerSlots) ) updates.push(equipUpdate(c, true));
