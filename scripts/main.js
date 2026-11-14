@@ -205,23 +205,20 @@ function getSets(actor) {
     try {
       const r = hudApi.getWeaponSets(actor);
       const sets = foundry.utils.deepClone(r.sets);
-      for ( const st of Object.values(sets) ) {
-        for ( const k of ["primary", "secondary"] ) if ( st[k] && !inInventory(actor.items.get(st[k])) ) st[k] = null;
+      const saved = actor.flags?.[HUD_ID]?.weaponSets?.sets ?? {};
+      for ( const [n, st] of Object.entries(sets) ) {
+        for ( const k of ["primary", "secondary"] ) {
+          // Nur was wirklich gespeichert wurde – keine automatische Vorbelegung mit ausgerüsteten Waffen
+          if ( !(k in (saved[n] ?? {})) ) st[k] = null;
+          if ( st[k] && !inInventory(actor.items.get(st[k])) ) st[k] = null;
+        }
       }
       return { scope: HUD_ID, active: String(r.active ?? "1"), sets };
     } catch ( err ) { console.warn(`${ID} | Combat HUD Waffensets`, err); }
   }
   const scope = hudActive() ? HUD_ID : ID;
   const f = actor.flags?.[scope]?.weaponSets ?? {};
-  // Gleiche Vorbelegung wie das Combat HUD, solange noch nichts gespeichert ist
   const defaults = { 1: {}, 2: {}, 3: {} };
-  if ( !f.sets ) {
-    const weapons = actor.itemTypes.weapon.filter(inInventory).sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
-    const equipped = weapons.filter(w => w.system.equipped);
-    const main = equipped[0] ?? weapons[0] ?? null;
-    const off = equipped.find(w => (w !== main) && w.system.properties?.has?.("lgt")) ?? null;
-    defaults[1] = { primary: main?.id ?? null, secondary: off?.id ?? null };
-  }
   const sets = {};
   for ( const n of ["1", "2", "3"] ) {
     const s = f.sets?.[n] ?? defaults[n];
