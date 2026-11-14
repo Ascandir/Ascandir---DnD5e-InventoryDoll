@@ -200,7 +200,11 @@
         "Purse": "Purse",
         "Misc": "Troubleshooting"
       },
-      "Saved": "Settings saved."
+      "Saved": "Settings saved.",
+      "AutoContainers": {
+        "Name": "Magic wand attaches containers",
+        "Hint": "If enabled, the magic wand button also fills free container slots (backpack, quiver, pouch …). Off: containers are only attached by dragging them onto a container slot."
+      }
     },
     "Purse": {
       "Title": "Purse",

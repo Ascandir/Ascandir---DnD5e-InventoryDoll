@@ -594,7 +594,7 @@ async function autoFill(actor, { loose = true, containers = true, quiet = false 
       if ( off ) { s.secondary = off.id; worn.add(off.id); updates.push(equipUpdate(off, true)); }
     }
   }
-  if ( containers ) {
+  if ( containers && setting("autoContainers") ) {
     // Freie Behälter-Slots füllen: Rucksack zuerst (Primär), dann Köcher, Beutel, Wasserschlauch, Rest.
     // Behälter, die in einem anderen Behälter liegen (z. B. Wasserschlauch im gekauften Rucksack), werden herausgenommen.
     while ( d.containers.length < layout.containerSlots ) d.containers.push(null);
@@ -2002,7 +2002,7 @@ class LayoutEditor extends ApplicationV2 {
 
 const GM_SETTINGS = [
   { group: "General", keys: ["enabled", "hideSidebar", "playersEquip", "hideWornInList", "emptyHighlight"] },
-  { group: "Equip", keys: ["newUnequipped", "autoEquip", "strictSlots", "autoAttune", "allowGround"] },
+  { group: "Equip", keys: ["newUnequipped", "autoEquip", "autoContainers", "strictSlots", "autoAttune", "allowGround"] },
   { group: "Purse", keys: ["purseEnabled", "purseCapacity"] }
 ];
 
@@ -2165,6 +2165,7 @@ Hooks.once("init", () => {
   reg("strictSlots", { name: "AID.Settings.Strict.Name", hint: "AID.Settings.Strict.Hint", type: Boolean, default: true });
   reg("newUnequipped", { name: "AID.Settings.NewUnequipped.Name", hint: "AID.Settings.NewUnequipped.Hint", type: Boolean, default: true });
   reg("autoEquip", { name: "AID.Settings.AutoEquip.Name", hint: "AID.Settings.AutoEquip.Hint", type: Boolean, default: true });
+  reg("autoContainers", { name: "AID.Settings.AutoContainers.Name", hint: "AID.Settings.AutoContainers.Hint", type: Boolean, default: false });
   reg("autoAttune", { name: "AID.Settings.Attune.Name", hint: "AID.Settings.Attune.Hint", type: Boolean, default: true });
   reg("emptyHighlight", {
     name: "AID.Settings.Highlight.Name", hint: "AID.Settings.Highlight.Hint", type: String, default: "outline",

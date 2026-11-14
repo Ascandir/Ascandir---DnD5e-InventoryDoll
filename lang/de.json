@@ -200,7 +200,11 @@
         "Purse": "Geldbörse",
         "Misc": "Fehlersuche"
       },
-      "Saved": "Einstellungen gespeichert."
+      "Saved": "Einstellungen gespeichert.",
+      "AutoContainers": {
+        "Name": "Zauberstab bindet Behälter an",
+        "Hint": "Ist das an, füllt der Zauberstab-Knopf auch freie Behälter-Slots (Rucksack, Köcher, Beutel …). Aus: Behälter kommen nur in einen Slot, wenn man sie selbst hineinzieht."
+      }
     },
     "Purse": {
       "Title": "Geldbörse",
