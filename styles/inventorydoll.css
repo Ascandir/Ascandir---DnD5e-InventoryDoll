@@ -651,3 +651,4 @@
   font-size: 12px;
 }
 .aid-loose-header { cursor: default; }
+.aid-weapons .aid-container-header h3 .fa-khanda { margin-right: 4px; color: var(--dnd5e-color-gold); }

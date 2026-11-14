@@ -245,6 +245,10 @@
     "Classic": {
       "Switch": "Switch to the classic dnd5e inventory (for testing, only for you)",
       "Back": "Back to the paperdoll inventory"
+    },
+    "Weapons": {
+      "Title": "Weapons",
+      "InSets": "In set"
     }
   }
 }

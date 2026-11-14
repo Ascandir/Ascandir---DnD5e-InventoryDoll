@@ -1302,6 +1302,38 @@ function renderContainerSection(app, container, { primary = false, attached = tr
     </div>`;
 }
 
+/** Virtuelle Liste „Waffen“: alles, was in einem Waffenset liegt (standardmäßig zugeklappt). */
+function renderWeaponList(app, actor) {
+  const data = getSets(actor);
+  const nums = { 1: "I", 2: "II", 3: "III" };
+  const where = new Map();
+  for ( const [n, st] of Object.entries(data.sets) ) {
+    for ( const [k, id] of Object.entries(st) ) {
+      if ( !id ) continue;
+      const list = where.get(id) ?? [];
+      list.push(`${nums[n]} ${L(k === "primary" ? "Sets.Main" : "Sets.Off")}`);
+      where.set(id, list);
+    }
+  }
+  if ( !where.size ) return "";
+  const open = !!game.user.getFlag(ID, `weaponsOpen.${actor.id}`);
+  const editable = app.isEditable && actor.isOwner;
+  const rows = [...where.keys()].map(id => actor.items.get(id)).filter(Boolean).map(item => renderRow(app, item, editable)
+    .replace(/<span class="subtitle">[^<]*<\/span>/, `<span class="subtitle">${esc(L("Weapons.InSets"))}: ${esc(where.get(item.id).join(", "))}</span>`))
+    .join("");
+  return `<div class="aid-container aid-weapons ${open ? "" : "collapsed"}">
+      <div class="aid-container-header" data-aid-toggle="aid-weapons" role="button" aria-expanded="${open}">
+        <i class="fa-solid fa-chevron-right aid-chevron" inert></i>
+        <h3><i class="fa-solid fa-khanda" inert></i> ${esc(L("Weapons.Title"))}</h3>
+        <span class="aid-spacer"></span><span class="aid-captext">${where.size}</span>
+      </div>
+      <div class="aid-container-body">
+        <div class="aid-colheads"><span class="aid-spacer"></span><span class="aid-col-weight">${esc(L("Row.Weight"))}</span><span class="aid-col-qty">${esc(L("Row.Quantity"))}</span><span class="aid-col-use">${esc(L("Row.Uses"))}</span><span class="aid-col-ctl"></span></div>
+        <ol class="aid-list unlist">${rows}</ol>
+      </div>
+    </div>`;
+}
+
 function renderContainers(app, actor) {
   const editable = app.isEditable && actor.isOwner;
   const d = getDoll(actor);
@@ -1323,7 +1355,7 @@ function renderContainers(app, actor) {
         </div>
       </div>
     </div>` : "";
-  return `<div class="aid-containers">${sections.join("")}</div>${title}${looseList}`;
+  return `<div class="aid-containers">${renderWeaponList(app, actor)}${sections.join("")}</div>${title}${looseList}`;
 }
 
 /* -------------------------------------------- */
@@ -1571,6 +1603,7 @@ function bindContainerWrap(app, actor, wrap, editable) {
     const box = h.closest(".aid-container");
     box.classList.toggle("collapsed");
     h.setAttribute("aria-expanded", String(!box.classList.contains("collapsed")));
+    if ( id === "aid-weapons" ) return game.user.setFlag(ID, `weaponsOpen.${actor.id}`, !box.classList.contains("collapsed"));
     const key = `collapsed.${actor.id}`;
     const set = new Set(game.user.getFlag(ID, key) ?? []);
     if ( box.classList.contains("collapsed") ) set.add(id);
@@ -1581,7 +1614,7 @@ function bindContainerWrap(app, actor, wrap, editable) {
   wrap.querySelectorAll(".aid-row").forEach(row => {
     const item = actor.items.get(row.dataset.aidItem);
     if ( !item ) return;
-    row.addEventListener("dragstart", ev => setDragData(ev, item, { from: "container" }));
+    row.addEventListener("dragstart", ev => setDragData(ev, item, { from: row.closest(".aid-weapons") ? "weaponlist" : "container" }));
     row.querySelector("[data-aid-act=open]")?.addEventListener("click", ev => {
       ev.preventDefault();
       useItem(item, ev);
@@ -1641,6 +1674,7 @@ async function handleSheetDrop(app, event) {
   if ( event.target?.closest?.(".aid-doll, .aid-cbar") ) return true;
   if ( !event.target?.closest?.(".tab.aid-tab") ) return false;
   const data = parseDrop(event);
+  if ( data?.aidFrom === "weaponlist" ) return true;
   if ( (data?.type !== "Item") || !["doll", "container"].includes(data.aidFrom) ) return false;
   if ( data.aidFrom === "container" ) return moveBetweenContainers(actor, data, event);
   if ( !canEdit(actor) ) return true;
