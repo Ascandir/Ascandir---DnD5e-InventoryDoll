@@ -416,10 +416,19 @@ async function assignContainer(actor, item, index) {
   const layout = getLayout();
   const d = getDoll(actor);
   const sets = getSets(actor);
-  detach(d, sets, item.id);
   while ( d.containers.length < layout.containerSlots ) d.containers.push(null);
+  const oldIndex = d.containers.indexOf(item.id);
+  const prevId = d.containers[index];
+  if ( prevId === item.id ) return;
+  detach(d, sets, item.id);
   d.containers[index] = item.id;
   const updates = [equipUpdate(item, true)];
+  const prev = actor.items.get(prevId);
+  if ( prev ) {
+    // Tauschen: der bisherige Behälter rückt in den frei gewordenen Slot, sonst liegt er lose im Inventar
+    if ( oldIndex >= 0 ) d.containers[oldIndex] = prev.id;
+    else updates.push({ _id: prev.id, "system.container": null, ...(prev.system.equipped !== undefined ? { "system.equipped": false } : {}) });
+  }
   await commit(actor, { ...dollUpdate(d), ...setsUpdate(sets) }, updates);
 }
 
@@ -1183,7 +1192,7 @@ function renderDoll(app, actor) {
     ? `<button type="button" class="aid-auto" data-aid-colors data-tooltip="${esc(L("Colors.Button"))}" aria-label="${esc(L("Colors.Button"))}"><i class="fa-solid fa-palette" inert></i></button>` : "";
   return `<aside class="aid-doll ${editable ? "editable" : "locked"} aid-hl-${esc(setting("emptyHighlight"))}" style="--aid-icon-color:${iconColor(actor)}">
       <section class="aid-card">
-        <header class="aid-header"><h3>${esc(L("Doll.Title"))}</h3>${palette}${auto}${gear}</header>
+        <header class="aid-header"><h3>${esc(L("Doll.Title"))}</h3>${palette}${auto}${gear}<button type="button" class="aid-auto" data-aid-classic data-tooltip="${esc(L("Classic.Switch"))}" aria-label="${esc(L("Classic.Switch"))}"><i class="fa-solid fa-table-list" inert></i></button></header>
         <div class="aid-figure">
           <div class="aid-portrait">${img(actor.img, actor.name)}</div>
           <div class="aid-ac" style="left:${layout.fixed.ac.x}%;top:${layout.fixed.ac.y}%" data-tooltip="${esc(L("Doll.AC"))}"><span>${esc(L("Doll.ACShort"))}</span><strong>${esc(ac)}</strong></div>
@@ -1400,6 +1409,12 @@ function bindDoll(app, actor, aside) {
     ev.stopPropagation();
     if ( editable || actor.isOwner ) switchSet(actor, b.dataset.aidSet);
   }));
+
+  aside.querySelector("[data-aid-classic]")?.addEventListener("click", ev => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    toggleClassic();
+  });
 
   aside.querySelector("[data-aid-colors]")?.addEventListener("click", ev => {
     ev.preventDefault();
@@ -1680,12 +1695,29 @@ function reconcile(actor) {
   }, 50);
 }
 
+const classicMode = () => !!game.user.getFlag(ID, "classic");
+async function toggleClassic() {
+  await game.user.setFlag(ID, "classic", !classicMode());
+  rerenderSheets();
+}
+
 function inject(app, element) {
   const actor = app.actor;
   if ( !actor || (actor.type !== "character") || !setting("enabled") ) return;
   const root = element instanceof HTMLElement ? element : element?.[0];
   const tab = root?.querySelector("section.tab[data-tab=\"inventory\"]");
   if ( !tab ) return;
+  if ( classicMode() ) {
+    // Altes dnd5e-Inventar mit kleinem Knopf zurück zur Paperdoll
+    tab.querySelector(":scope > .aid-classic-back")?.remove();
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "aid-classic-back";
+    b.innerHTML = `<i class="fa-solid fa-person-rays" inert></i> ${esc(L("Classic.Back"))}`;
+    b.addEventListener("click", ev => { ev.preventDefault(); toggleClassic(); });
+    tab.prepend(b);
+    return;
+  }
 
   tab.classList.add("aid-tab");
   tab.querySelector(":scope > .aid-doll")?.remove();
@@ -2216,7 +2248,7 @@ Hooks.once("setup", () => {
   const original = Sheet.prototype.changeTab;
   Sheet.prototype.changeTab = function(tab, group, options) {
     original.call(this, tab, group, options);
-    if ( (group !== "primary") || !setting("enabled") || !setting("hideSidebar") ) return;
+    if ( (group !== "primary") || !setting("enabled") || !setting("hideSidebar") || classicMode() ) return;
     if ( tab === "inventory" ) this._toggleSidebar?.(true);
     else this._toggleSidebar?.(!!game.user.getFlag("dnd5e", this._sidebarCollapsedKeyPath));
   };

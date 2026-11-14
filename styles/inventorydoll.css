@@ -642,3 +642,11 @@
 .aid-set-row select { width: 220px; flex: none; }
 .aid-set-row .aid-ed-hint { margin: 2px 0 0; }
 .aid-colors-title { margin: 0; border: none; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+
+/* ---------- v0.2.29: Umschalten aufs alte Inventar ---------- */
+.aid-classic-back {
+  display: inline-flex; align-items: center; gap: 6px;
+  align-self: flex-start;
+  height: 28px; min-height: 0; padding: 0 12px; margin-bottom: 6px;
+  font-size: 12px;
+}

@@ -241,6 +241,10 @@
       "Presets": "Schnellauswahl",
       "UseDefault": "Standard verwenden",
       "NoActors": "Dir gehören keine Charaktere."
+    },
+    "Classic": {
+      "Switch": "Zum alten dnd5e-Inventar wechseln (zum Testen, nur für dich)",
+      "Back": "Zurück zum Paperdoll-Inventar"
     }
   }
 }

@@ -241,6 +241,10 @@
       "Presets": "Quick pick",
       "UseDefault": "Use default",
       "NoActors": "You do not own any characters."
+    },
+    "Classic": {
+      "Switch": "Switch to the classic dnd5e inventory (for testing, only for you)",
+      "Back": "Back to the paperdoll inventory"
     }
   }
 }
