@@ -68,6 +68,26 @@ function iconColor(actor) {
   return /^#[0-9a-f]{6}$/i.test(c) ? c : "#fff4d6";
 }
 
+/** Hintergrundbild der Paperdoll: eigener (wenn der SL das erlaubt), sonst der des SL. */
+function backgroundFor(actor) {
+  const global = setting("bgGlobal") || "";
+  if ( !setting("bgPlayers") ) return global;
+  const own = (game.user.getFlag(ID, "backgrounds") ?? {})[actor?.id];
+  return own || global;
+}
+const cssUrl = path => `url("${String(path).replace(/["\\\n]/g, "")}")`;
+
+/** Dateiauswahl öffnen (mit Rückfall auf Texteingabe, wenn der Benutzer keinen Dateizugriff hat). */
+function pickImage(current, callback) {
+  const FP = foundry.applications.apps?.FilePicker?.implementation ?? globalThis.FilePicker;
+  try {
+    new FP({ type: "image", current: current || "", callback }).render(true);
+  } catch ( err ) {
+    console.warn(`${ID} | Dateiauswahl`, err);
+    ui.notifications.warn(L("Background.NoBrowse"));
+  }
+}
+
 /** Symbol eines Feldes: eigenes Bild, eigenes Font-Awesome-Symbol oder Standard des Typs. */
 function slotIcon(slot) {
   if ( slot.iconImg ) return `<img class="aid-slot-icon aid-slot-img" src="${esc(slot.iconImg)}" alt="" draggable="false">`;
@@ -1210,7 +1230,8 @@ function renderDoll(app, actor) {
   return `<aside class="aid-doll ${editable ? "editable" : "locked"} aid-hl-${esc(setting("emptyHighlight"))}" style="--aid-icon-color:${iconColor(actor)}">
       <section class="aid-card">
         <header class="aid-header"><h3 data-tooltip="InventoryDoll v${esc(game.modules.get(ID)?.version ?? "?")}">${esc(L("Doll.Title"))}</h3>${palette}${auto}${gear}<button type="button" class="aid-auto" data-aid-classic data-tooltip="${esc(L("Classic.Switch"))}" aria-label="${esc(L("Classic.Switch"))}"><i class="fa-solid fa-table-list" inert></i></button></header>
-        <div class="aid-figure">
+        <div class="aid-figure ${backgroundFor(actor) ? "has-bg" : ""}">
+          ${backgroundFor(actor) ? `<div class="aid-bg" style='background-image:${esc(cssUrl(backgroundFor(actor)))}'></div>` : ""}
           <div class="aid-portrait">${img(actor.img, actor.name)}</div>
           <div class="aid-ac" style="left:${layout.fixed.ac.x}%;top:${layout.fixed.ac.y}%" data-tooltip="${esc(L("Doll.AC"))}"><span>${esc(L("Doll.ACShort"))}</span><strong>${esc(ac)}</strong></div>
           ${slots}
@@ -2135,6 +2156,7 @@ class LayoutEditor extends ApplicationV2 {
 
 const GM_SETTINGS = [
   { group: "General", keys: ["enabled", "hideSidebar", "playersEquip", "hideWornInList", "emptyHighlight"] },
+  { group: "Background", keys: ["bgPlayers", "bgGlobal"] },
   { group: "Equip", keys: ["newUnequipped", "autoEquip", "autoContainers", "strictSlots", "autoAttune", "allowGround"] },
   { group: "Purse", keys: ["purseEnabled", "purseCapacity"] }
 ];
@@ -2162,6 +2184,9 @@ class GMSettingsMenu extends ApplicationV2 {
       } else if ( cfg.type === Number ) {
         const r = cfg.range ?? {};
         input = `<input type="number" data-key="${key}" value="${v}" ${r.min != null ? `min="${r.min}"` : ""} ${r.max != null ? `max="${r.max}"` : ""} ${r.step ? `step="${r.step}"` : ""}>`;
+      } else if ( cfg.filePicker ) {
+        input = `<span class="aid-file"><input type="text" data-key="${key}" value="${esc(v)}" placeholder="${esc(L("Background.None"))}">
+          <button type="button" data-pick="${key}" aria-label="${esc(L("Background.Pick"))}" data-tooltip="${esc(L("Background.Pick"))}"><i class="fa-solid fa-file-image" inert></i></button></span>`;
       } else input = `<input type="text" data-key="${key}" value="${esc(v)}">`;
       return `<div class="aid-set-row"><label><span class="aid-set-name">${name}</span>${input}</label><p class="aid-ed-hint">${hint}</p></div>`;
     };
@@ -2176,6 +2201,10 @@ class GMSettingsMenu extends ApplicationV2 {
   _replaceHTML(result, content) {
     content.innerHTML = result;
     content.querySelector("[data-open-editor]")?.addEventListener("click", () => new LayoutEditor().render({ force: true }));
+    content.querySelectorAll("[data-pick]").forEach(b => b.addEventListener("click", () => {
+      const input = content.querySelector(`[data-key="${b.dataset.pick}"]`);
+      pickImage(input.value, path => { input.value = path; });
+    }));
     content.querySelector("[data-save]")?.addEventListener("click", async () => {
       for ( const el of content.querySelectorAll("[data-key]") ) {
         const key = el.dataset.key;
@@ -2207,6 +2236,7 @@ class IconColorMenu extends ApplicationV2 {
     this.focusActor = options.focusActor ?? null;
     this.colors = foundry.utils.deepClone(game.user.getFlag(ID, "iconColors") ?? {});
     this.fallback = setting("iconColorDefault") || "#fff4d6";
+    this.bgs = foundry.utils.deepClone(game.user.getFlag(ID, "backgrounds") ?? {});
   }
 
   async _renderHTML() {
@@ -2229,6 +2259,7 @@ class IconColorMenu extends ApplicationV2 {
           <input type="color" value="${esc(this.fallback)}" data-default aria-label="${esc(L("Colors.Default"))}"></div>
         <div class="aid-swatches"><span>${esc(L("Colors.Presets"))}</span>${presets}</div>
         ${rows}
+        ${this._bgSection(actors)}
         <fieldset><legend>${esc(L("Settings.Group.Misc"))}</legend>
           <div class="aid-set-row"><label><span class="aid-set-name">${esc(L("Settings.Debug.Name"))}</span><input type="checkbox" data-debug ${setting("debug") ? "checked" : ""}></label>
           <p class="aid-ed-hint">${esc(L("Settings.Debug.Hint"))}</p></div>
@@ -2237,8 +2268,25 @@ class IconColorMenu extends ApplicationV2 {
       </div>`;
   }
 
+  _bgSection(actors) {
+    if ( !setting("bgPlayers") ) {
+      return `<fieldset><legend>${esc(L("Background.Title"))}</legend><p class="aid-ed-hint">${esc(L("Background.GMOnly"))}</p></fieldset>`;
+    }
+    const rows = actors.map(a => `<div class="aid-color-row">
+        <img src="${esc(a.img)}" alt="" draggable="false"><span class="aid-color-name">${esc(a.name)}</span>
+        <span class="aid-file"><input type="text" data-bg="${a.id}" value="${esc(this.bgs[a.id] ?? "")}" placeholder="${esc(setting("bgGlobal") ? L("Background.UsesGM") : L("Background.None"))}">
+        <button type="button" data-bg-pick="${a.id}" aria-label="${esc(L("Background.Pick"))}" data-tooltip="${esc(L("Background.Pick"))}"><i class="fa-solid fa-file-image" inert></i></button></span>
+      </div>`).join("");
+    return `<fieldset><legend>${esc(L("Background.Title"))}</legend><p class="aid-ed-hint">${esc(L("Background.Hint"))}</p>${rows}</fieldset>`;
+  }
+
   _replaceHTML(result, content) {
     content.innerHTML = result;
+    content.querySelectorAll("[data-bg]").forEach(i => i.addEventListener("change", () => { this.bgs[i.dataset.bg] = i.value.trim(); }));
+    content.querySelectorAll("[data-bg-pick]").forEach(b => b.addEventListener("click", () => {
+      const input = content.querySelector(`[data-bg="${b.dataset.bgPick}"]`);
+      pickImage(input.value, path => { input.value = path; this.bgs[b.dataset.bgPick] = path; });
+    }));
     let last = content.querySelector(".aid-color-row.focus input[type=color]") ?? null;
     content.querySelectorAll("input[type=color][data-actor]").forEach(i => {
       i.addEventListener("focus", () => { last = i; });
@@ -2260,6 +2308,11 @@ class IconColorMenu extends ApplicationV2 {
       if ( dbg !== setting("debug") ) await game.settings.set(ID, "debug", dbg);
       await game.user.unsetFlag(ID, "iconColors");
       await game.user.setFlag(ID, "iconColors", this.colors);
+      if ( setting("bgPlayers") ) {
+        const bgs = Object.fromEntries(Object.entries(this.bgs).filter(([, v]) => v));
+        await game.user.unsetFlag(ID, "backgrounds");
+        await game.user.setFlag(ID, "backgrounds", bgs);
+      }
       rerenderSheets();
       this.close();
     });
@@ -2310,6 +2363,8 @@ Hooks.once("init", () => {
   game.settings.register(ID, "purseDenoms", { scope: "world", config: false, type: Array, default: null, onChange: rerenderSheets });
   reg("purseCapacity", { name: "AID.Settings.PurseCap.Name", hint: "AID.Settings.PurseCap.Hint", type: Number, default: 300, range: { min: 10, max: 10000, step: 10 }, onChange: rerenderSheets });
   reg("debug", { name: "AID.Settings.Debug.Name", hint: "AID.Settings.Debug.Hint", type: Boolean, default: false, scope: "client" });
+  reg("bgPlayers", { name: "AID.Settings.BgPlayers.Name", hint: "AID.Settings.BgPlayers.Hint", type: Boolean, default: false, onChange: rerenderSheets });
+  reg("bgGlobal", { name: "AID.Settings.BgGlobal.Name", hint: "AID.Settings.BgGlobal.Hint", type: String, default: "", filePicker: "image", onChange: rerenderSheets });
   reg("allowGround", { name: "AID.Settings.Ground.Name", hint: "AID.Settings.Ground.Hint", type: Boolean, default: true, onChange: rerenderSheets });
 });
 

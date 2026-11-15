@@ -198,12 +198,21 @@
         "General": "Display",
         "Equip": "Equipping",
         "Purse": "Purse",
-        "Misc": "Troubleshooting"
+        "Misc": "Troubleshooting",
+        "Background": "Background"
       },
       "Saved": "Settings saved.",
       "AutoContainers": {
         "Name": "Magic wand attaches containers",
         "Hint": "If enabled, the magic wand button also fills free container slots (backpack, quiver, pouch …). Off: containers are only attached by dragging them onto a container slot."
+      },
+      "BgPlayers": {
+        "Name": "Players choose their own background",
+        "Hint": "If enabled, every player can set their own paperdoll background per character in the player settings. Otherwise the GM's background applies to everyone."
+      },
+      "BgGlobal": {
+        "Name": "Paperdoll background (GM)",
+        "Hint": "Background image behind every portrait. Used for everyone – or, if players may choose their own, for everyone who has not picked one."
       }
     },
     "Purse": {
@@ -251,6 +260,15 @@
       "InSets": "In set",
       "Empty": "No weapons in the weapon sets yet. Drag a weapon onto the main or off hand of the paperdoll.",
       "Always": "Always equipped – everyone can attack unarmed"
+    },
+    "Background": {
+      "Title": "Paperdoll background",
+      "Hint": "Background image behind the portrait of each of your characters (useful for portraits without background). Empty = the GM's background.",
+      "GMOnly": "The GM sets the background for everyone.",
+      "UsesGM": "GM background",
+      "None": "No background",
+      "Pick": "Choose image",
+      "NoBrowse": "You are not allowed to browse files. Paste an image path or URL into the field instead."
     }
   }
 }

@@ -198,12 +198,21 @@
         "General": "Anzeige",
         "Equip": "Ausrüsten",
         "Purse": "Geldbörse",
-        "Misc": "Fehlersuche"
+        "Misc": "Fehlersuche",
+        "Background": "Hintergrund"
       },
       "Saved": "Einstellungen gespeichert.",
       "AutoContainers": {
         "Name": "Zauberstab bindet Behälter an",
         "Hint": "Ist das an, füllt der Zauberstab-Knopf auch freie Behälter-Slots (Rucksack, Köcher, Beutel …). Aus: Behälter kommen nur in einen Slot, wenn man sie selbst hineinzieht."
+      },
+      "BgPlayers": {
+        "Name": "Spieler wählen eigenen Hintergrund",
+        "Hint": "Ist das an, kann jeder Spieler in den Spieler-Einstellungen pro Charakter einen eigenen Paperdoll-Hintergrund setzen. Sonst gilt für alle der Hintergrund des SL."
+      },
+      "BgGlobal": {
+        "Name": "Paperdoll-Hintergrund (SL)",
+        "Hint": "Hintergrundbild hinter allen Porträts. Gilt für alle – oder, wenn Spieler selbst wählen dürfen, für alle, die keinen eigenen gesetzt haben."
       }
     },
     "Purse": {
@@ -251,6 +260,15 @@
       "InSets": "Im Set",
       "Empty": "Noch keine Waffen in den Waffensets. Zieh eine Waffe auf Haupt- oder Nebenhand der Paperdoll.",
       "Always": "Immer ausgerüstet – jeder kann waffenlos angreifen"
+    },
+    "Background": {
+      "Title": "Hintergrund der Paperdoll",
+      "Hint": "Hintergrundbild hinter dem Porträt deiner Charaktere (praktisch für Porträts ohne Hintergrund). Leer = Hintergrund des SL.",
+      "GMOnly": "Den Hintergrund legt der SL für alle fest.",
+      "UsesGM": "Hintergrund des SL",
+      "None": "Kein Hintergrund",
+      "Pick": "Bild wählen",
+      "NoBrowse": "Du darfst keine Dateien durchsuchen. Füge stattdessen einen Bildpfad oder eine URL ins Feld ein."
     }
   }
 }

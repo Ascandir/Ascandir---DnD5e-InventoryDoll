@@ -652,3 +652,15 @@
 }
 .aid-loose-header { cursor: default; }
 .aid-weapons .aid-container-header h3 .fa-khanda { margin-right: 4px; color: var(--dnd5e-color-gold); }
+
+/* ---------- v0.2.37: Hintergrundbild hinter dem Porträt ---------- */
+.aid-figure .aid-bg {
+  position: absolute; inset: 0;
+  border-radius: 4px;
+  background-size: cover; background-position: center;
+  pointer-events: none;
+}
+.aid-figure.has-bg .aid-portrait { background: transparent; }
+.aid-file { display: flex; gap: 4px; flex: 1; min-width: 0; max-width: 300px; }
+.aid-file input { flex: 1; min-width: 0; }
+.aid-file button { width: 30px; flex: none; min-height: 0; padding: 0; }
