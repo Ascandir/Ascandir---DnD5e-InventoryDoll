@@ -2288,19 +2288,31 @@ class IconColorMenu extends ApplicationV2 {
   }
 
   _bgSection(actors) {
+    // Der SL setzt hier direkt den Hintergrund für alle und schaltet die Spieler-Auswahl frei
+    const gmPart = game.user.isGM ? `
+      <div class="aid-set-row"><label><span class="aid-set-name">${esc(L("Settings.BgGlobal.Name"))}</span>
+        <span class="aid-file"><input type="text" data-bg-global value="${esc(setting("bgGlobal"))}" placeholder="${esc(L("Background.None"))}">
+        <button type="button" data-bg-global-pick aria-label="${esc(L("Background.Pick"))}" data-tooltip="${esc(L("Background.Pick"))}"><i class="fa-solid fa-file-image" inert></i></button></span></label>
+        <p class="aid-ed-hint">${esc(L("Settings.BgGlobal.Hint"))}</p></div>
+      <div class="aid-set-row"><label><span class="aid-set-name">${esc(L("Settings.BgPlayers.Name"))}</span><input type="checkbox" data-bg-players ${setting("bgPlayers") ? "checked" : ""}></label>
+        <p class="aid-ed-hint">${esc(L("Settings.BgPlayers.Hint"))}</p></div>` : "";
     if ( !setting("bgPlayers") ) {
-      return `<fieldset><legend>${esc(L("Background.Title"))}</legend><p class="aid-ed-hint">${esc(L("Background.GMOnly"))}</p></fieldset>`;
+      return `<fieldset><legend>${esc(L("Background.Title"))}</legend>${gmPart || `<p class="aid-ed-hint">${esc(L("Background.GMOnly"))}</p>`}</fieldset>`;
     }
     const rows = actors.map(a => `<div class="aid-color-row">
         <img src="${esc(a.img)}" alt="" draggable="false"><span class="aid-color-name">${esc(a.name)}</span>
         <span class="aid-file"><input type="text" data-bg="${a.id}" value="${esc(this.bgs[a.id] ?? "")}" placeholder="${esc(setting("bgGlobal") ? L("Background.UsesGM") : L("Background.None"))}">
         <button type="button" data-bg-pick="${a.id}" aria-label="${esc(L("Background.Pick"))}" data-tooltip="${esc(L("Background.Pick"))}"><i class="fa-solid fa-file-image" inert></i></button></span>
       </div>`).join("");
-    return `<fieldset><legend>${esc(L("Background.Title"))}</legend><p class="aid-ed-hint">${esc(L("Background.Hint"))}</p>${rows}</fieldset>`;
+    return `<fieldset><legend>${esc(L("Background.Title"))}</legend>${gmPart}<p class="aid-ed-hint">${esc(L("Background.Hint"))}</p>${rows}</fieldset>`;
   }
 
   _replaceHTML(result, content) {
     content.innerHTML = result;
+    content.querySelector("[data-bg-global-pick]")?.addEventListener("click", () => {
+      const input = content.querySelector("[data-bg-global]");
+      pickImage(input.value, path => { input.value = path; });
+    });
     content.querySelectorAll("[data-bg]").forEach(i => i.addEventListener("change", () => { this.bgs[i.dataset.bg] = i.value.trim(); }));
     content.querySelectorAll("[data-bg-pick]").forEach(b => b.addEventListener("click", () => {
       const input = content.querySelector(`[data-bg="${b.dataset.bgPick}"]`);
@@ -2327,6 +2339,12 @@ class IconColorMenu extends ApplicationV2 {
       if ( dbg !== setting("debug") ) await game.settings.set(ID, "debug", dbg);
       await game.user.unsetFlag(ID, "iconColors");
       await game.user.setFlag(ID, "iconColors", this.colors);
+      if ( game.user.isGM ) {
+        const g = content.querySelector("[data-bg-global]")?.value.trim() ?? setting("bgGlobal");
+        if ( g !== setting("bgGlobal") ) await game.settings.set(ID, "bgGlobal", g);
+        const bp = !!content.querySelector("[data-bg-players]")?.checked;
+        if ( bp !== setting("bgPlayers") ) await game.settings.set(ID, "bgPlayers", bp);
+      }
       if ( setting("bgPlayers") ) {
         const bgs = Object.fromEntries(Object.entries(this.bgs).filter(([, v]) => v));
         await game.user.unsetFlag(ID, "backgrounds");
