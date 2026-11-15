@@ -213,7 +213,8 @@
       "BgGlobal": {
         "Name": "Paperdoll background (GM)",
         "Hint": "Background image behind every portrait. Used for everyone – or, if players may choose their own, for everyone who has not picked one."
-      }
+      },
+      "GMOnlyWarn": "Only the Game Master can change these settings."
     },
     "Purse": {
       "Title": "Purse",

@@ -213,7 +213,8 @@
       "BgGlobal": {
         "Name": "Paperdoll-Hintergrund (SL)",
         "Hint": "Hintergrundbild hinter allen Porträts. Gilt für alle – oder, wenn Spieler selbst wählen dürfen, für alle, die keinen eigenen gesetzt haben."
-      }
+      },
+      "GMOnlyWarn": "Diese Einstellungen kann nur der Spielleiter ändern."
     },
     "Purse": {
       "Title": "Geldbörse",

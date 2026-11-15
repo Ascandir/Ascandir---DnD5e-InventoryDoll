@@ -1905,6 +1905,11 @@ function inject(app, element) {
 const { ApplicationV2 } = foundry.applications.api;
 
 class LayoutEditor extends ApplicationV2 {
+  render(...args) {
+    if ( !game.user.isGM ) { ui.notifications.warn(L("Settings.GMOnlyWarn")); return this; }
+    return super.render(...args);
+  }
+
   static DEFAULT_OPTIONS = {
     id: "aid-layout-editor",
     classes: ["aid-editor", "dnd5e2"],
@@ -2161,7 +2166,20 @@ const GM_SETTINGS = [
   { group: "Purse", keys: ["purseEnabled", "purseCapacity"] }
 ];
 
+/** Sperre für SL-Fenster: nur echte Spielleiter. */
+function gmOnly(app) {
+  if ( game.user.isGM ) return false;
+  ui.notifications.warn(L("Settings.GMOnlyWarn"));
+  app.close?.();
+  return true;
+}
+
 class GMSettingsMenu extends ApplicationV2 {
+  render(...args) {
+    if ( !game.user.isGM ) { ui.notifications.warn(L("Settings.GMOnlyWarn")); return this; }
+    return super.render(...args);
+  }
+
   static DEFAULT_OPTIONS = {
     id: "aid-gm-settings",
     classes: ["aid-settings", "dnd5e2"],
@@ -2408,6 +2426,15 @@ Hooks.once("setup", () => {
     if ( tab === "inventory" ) this._toggleSidebar?.(true);
     else this._toggleSidebar?.(!!game.user.getFlag("dnd5e", this._sidebarCollapsedKeyPath));
   };
+});
+
+Hooks.on("renderSettingsConfig", (app, element) => {
+  if ( game.user.isGM ) return;
+  const root = element instanceof HTMLElement ? element : element?.[0];
+  for ( const key of ["gmSettings", "layoutEditor"] ) {
+    const btn = root?.querySelector(`button[data-key="${ID}.${key}"], [data-key="${ID}.${key}"]`);
+    (btn?.closest(".form-group") ?? btn)?.remove();
+  }
 });
 
 Hooks.once("ready", () => {
