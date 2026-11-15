@@ -1752,8 +1752,9 @@ function bindSearch(tab) {
 }
 
 function hideWornRows(actor, tab) {
-  if ( !setting("hideWornInList") ) return;
-  const worn = wornIds(actor);
+  const worn = setting("hideWornInList") ? wornIds(actor) : new Set();
+  // Waffenloser Schlag gehört nur in „Waffen“, nie unter „Nicht verstaut“
+  for ( const w of actor.itemTypes.weapon ) if ( isUnarmed(w) ) worn.add(w.id);
   const list = tab.querySelector(".inventory-element .items-list");
   if ( !list ) return;
   for ( const li of list.querySelectorAll("li.item[data-item-id]") ) {
