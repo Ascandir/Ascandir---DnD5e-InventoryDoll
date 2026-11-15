@@ -249,7 +249,8 @@
     "Weapons": {
       "Title": "Waffen",
       "InSets": "Im Set",
-      "Empty": "Noch keine Waffen in den Waffensets. Zieh eine Waffe auf Haupt- oder Nebenhand der Paperdoll."
+      "Empty": "Noch keine Waffen in den Waffensets. Zieh eine Waffe auf Haupt- oder Nebenhand der Paperdoll.",
+      "Always": "Immer ausgerüstet – jeder kann waffenlos angreifen"
     }
   }
 }

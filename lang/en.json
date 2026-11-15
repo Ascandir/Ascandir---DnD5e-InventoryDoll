@@ -249,7 +249,8 @@
     "Weapons": {
       "Title": "Weapons",
       "InSets": "In set",
-      "Empty": "No weapons in the weapon sets yet. Drag a weapon onto the main or off hand of the paperdoll."
+      "Empty": "No weapons in the weapon sets yet. Drag a weapon onto the main or off hand of the paperdoll.",
+      "Always": "Always equipped – everyone can attack unarmed"
     }
   }
 }

@@ -150,6 +150,9 @@ const isFocus = item => !!item?.system.properties?.has?.("foc") || ["rod", "wand
 const isAmmo = item => (item?.type === "consumable") && (item.system.type?.value === "ammo");
 const isConsumable = item => item?.type === "consumable";
 
+/** Waffenloser Schlag (dnd5e legt ihn jedem Charakter als Waffe an). */
+const isUnarmed = item => (item?.type === "weapon") && /unarmed|waffenlos/i.test(`${item.system.identifier ?? ""} ${item.name}`);
+
 /** Nur echte Gegenstände aus dem Inventar (keine Merkmale, Zauber, natürlichen Waffen, Fahrzeugteile). */
 const INVENTORY_TYPES = new Set(["weapon", "equipment", "consumable", "tool", "loot", "container"]);
 function inInventory(item) {
@@ -1317,14 +1320,16 @@ function renderWeaponList(app, actor) {
   }
   const open = !!game.user.getFlag(ID, `weaponsOpen.${actor.id}`);
   const editable = app.isEditable && actor.isOwner;
-  const rows = [...where.keys()].map(id => actor.items.get(id)).filter(Boolean).map(item => renderRow(app, item, editable)
+  const unarmedRows = actor.itemTypes.weapon.filter(isUnarmed).map(item => renderRow(app, item, editable)
+    .replace(/<span class="subtitle">[^<]*<\/span>/, `<span class="subtitle">${esc(L("Weapons.Always"))}</span>`)).join("");
+  const rows = unarmedRows + [...where.keys()].map(id => actor.items.get(id)).filter(Boolean).map(item => renderRow(app, item, editable)
     .replace(/<span class="subtitle">[^<]*<\/span>/, `<span class="subtitle">${esc(L("Weapons.InSets"))}: ${esc(where.get(item.id).join(", "))}</span>`))
     .join("");
   return `<div class="aid-container aid-weapons ${open ? "" : "collapsed"}">
       <div class="aid-container-header" data-aid-toggle="aid-weapons" role="button" aria-expanded="${open}">
         <i class="fa-solid fa-chevron-right aid-chevron" inert></i>
         <h3><i class="fa-solid fa-khanda" inert></i> ${esc(L("Weapons.Title"))}</h3>
-        <span class="aid-spacer"></span><span class="aid-captext">${where.size}</span>
+        <span class="aid-spacer"></span><span class="aid-captext">${where.size + actor.itemTypes.weapon.filter(isUnarmed).length}</span>
       </div>
       <div class="aid-container-body">
         <div class="aid-colheads"><span class="aid-spacer"></span><span class="aid-col-weight">${esc(L("Row.Weight"))}</span><span class="aid-col-qty">${esc(L("Row.Quantity"))}</span><span class="aid-col-use">${esc(L("Row.Uses"))}</span><span class="aid-col-ctl"></span></div>
@@ -1864,6 +1869,11 @@ function inject(app, element) {
 
   if ( setting("hideSidebar") && (app.tabGroups?.primary === "inventory") ) app._toggleSidebar?.(true);
   try { repairLoops(actor); } catch ( err ) { console.error(`${ID} | Reparatur`, err); }
+  // Waffenloser Schlag ist immer ausgerüstet
+  if ( actor.isOwner ) {
+    const fix = actor.itemTypes.weapon.filter(i => isUnarmed(i) && !i.system.equipped).map(i => ({ _id: i.id, "system.equipped": true }));
+    if ( fix.length ) actor.updateEmbeddedDocuments("Item", fix, { aid: true }).catch(() => {});
+  }
   reconcile(actor);
 }
 
@@ -2390,6 +2400,7 @@ Hooks.on("preCreateItem", (item, data, options, userId) => {
   if ( (userId !== game.user.id) || options.aid || !setting("enabled") || !setting("newUnequipped") ) return;
   const actor = item.parent;
   if ( !(actor instanceof Actor) || (actor.type !== "character") ) return;
+  if ( isUnarmed(item) ) return;
   if ( item.system?.equipped ) {
     debug("Vor dem Anlegen abgerüstet:", item.name);
     item.updateSource({ "system.equipped": false });
@@ -2399,7 +2410,7 @@ Hooks.on("preCreateItem", (item, data, options, userId) => {
 Hooks.on("createItem", (item, options, userId) => {
   freshItems.add(item.id);
   setTimeout(() => freshItems.delete(item.id), 5000);
-  if ( (userId === game.user.id) && !options.aid && item.system?.equipped && (item.parent instanceof Actor)
+  if ( (userId === game.user.id) && !options.aid && item.system?.equipped && !isUnarmed(item) && (item.parent instanceof Actor)
     && (item.parent.type === "character") && setting("enabled") && setting("newUnequipped") ) {
     debug("Neu angelegt und ausgerüstet → wird abgerüstet:", item.name);
     item.update({ "system.equipped": false }, { aid: true });
@@ -2424,6 +2435,9 @@ Hooks.on("updateItem", (item, changes, options, userId) => {
   if ( (userId !== game.user.id) || options.aid || !(item.parent instanceof Actor) || (item.parent.type !== "character") ) return;
   const actor = item.parent;
   if ( !setting("enabled") ) return;
+  if ( isUnarmed(item) && (foundry.utils.getProperty(changes, "system.equipped") === false) ) {
+    return item.update({ "system.equipped": true }, { aid: true });
+  }
   if ( foundry.utils.getProperty(changes, "system.equipped") === true ) {
     // Gerade gekauft/importiert: nur auf freie Plätze, nichts tauschen
     if ( freshItems.has(item.id) && setting("newUnequipped") ) {
