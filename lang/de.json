@@ -248,7 +248,8 @@
     },
     "Weapons": {
       "Title": "Waffen",
-      "InSets": "Im Set"
+      "InSets": "Im Set",
+      "Empty": "Noch keine Waffen in den Waffensets. Zieh eine Waffe auf Haupt- oder Nebenhand der Paperdoll."
     }
   }
 }

@@ -17,7 +17,7 @@ https://github.com/Ascandir/Ascandir---DnD5e-InventoryDoll/releases/latest/downl
 
 **Links – Paperdoll**
 - Das Porträt des Charakters steht in der Mitte, die Ausrüstungs-Slots liegen darum herum, unten am Porträt die Rüstungsklasse.
-- Gegenstand auf einen Slot ziehen = ausgerüstet. Mit der Maus darüberfahren zeigt den Tooltip wie im normalen Inventar, Rechtsklick löst ihn als eigenes Fenster heraus. Umschalt + Rechtsklick = ablegen (landet im Primär-Behälter). Klick auf einen Gegenstand löst seine Aktion aus (z. B. Angriff), Strg + Klick öffnet ihn.
+- Gegenstand auf einen Slot ziehen = ausgerüstet. Mit der Maus darüberfahren zeigt den Tooltip wie im normalen Inventar, **Rechtsklick öffnet die Details des Gegenstands** (zum Bearbeiten), Alt + Rechtsklick löst den Tooltip als eigenes Fenster heraus. Umschalt + Rechtsklick = ablegen (landet im Primär-Behälter). Klick auf einen Gegenstand löst seine Aktion aus (z. B. Angriff), Strg + Klick öffnet ihn.
 - Ausgerüstete Gegenstände erscheinen nur noch auf der Paperdoll, nicht mehr in der Liste rechts.
 - **Hände & Waffensets:** Unten an der Figur liegen Haupt- und Nebenhand als große Slots, dazwischen die Knöpfe **I / II / III** für das aktive Set. Zweihandwaffen belegen beide Hände (die Nebenhand zeigt sie blass an). Dieselbe Waffe darf in mehreren Sets liegen; eine Waffe auf einen Set-Knopf ziehen legt sie in dieses Set. Ist **Ascandir - Combat HUD** aktiv, sind es dieselben Waffensets wie im HUD.
 - **Einstimmung:** Wer einen Gegenstand mit Einstimmungspflicht anlegt, stimmt sich automatisch ein, solange ein Platz frei ist. Wird er von der Paperdoll genommen, endet die Einstimmung. Ein kleines Sonnen-Symbol am Slot zeigt den Zustand (gold = eingestimmt, rot = fehlt).

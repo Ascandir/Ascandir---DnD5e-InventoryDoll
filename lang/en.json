@@ -248,7 +248,8 @@
     },
     "Weapons": {
       "Title": "Weapons",
-      "InSets": "In set"
+      "InSets": "In set",
+      "Empty": "No weapons in the weapon sets yet. Drag a weapon onto the main or off hand of the paperdoll."
     }
   }
 }

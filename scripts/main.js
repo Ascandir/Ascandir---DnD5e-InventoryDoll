@@ -1206,7 +1206,7 @@ function renderDoll(app, actor) {
     ? `<button type="button" class="aid-auto" data-aid-colors data-tooltip="${esc(L("Colors.Button"))}" aria-label="${esc(L("Colors.Button"))}"><i class="fa-solid fa-palette" inert></i></button>` : "";
   return `<aside class="aid-doll ${editable ? "editable" : "locked"} aid-hl-${esc(setting("emptyHighlight"))}" style="--aid-icon-color:${iconColor(actor)}">
       <section class="aid-card">
-        <header class="aid-header"><h3>${esc(L("Doll.Title"))}</h3>${palette}${auto}${gear}<button type="button" class="aid-auto" data-aid-classic data-tooltip="${esc(L("Classic.Switch"))}" aria-label="${esc(L("Classic.Switch"))}"><i class="fa-solid fa-table-list" inert></i></button></header>
+        <header class="aid-header"><h3 data-tooltip="InventoryDoll v${esc(game.modules.get(ID)?.version ?? "?")}">${esc(L("Doll.Title"))}</h3>${palette}${auto}${gear}<button type="button" class="aid-auto" data-aid-classic data-tooltip="${esc(L("Classic.Switch"))}" aria-label="${esc(L("Classic.Switch"))}"><i class="fa-solid fa-table-list" inert></i></button></header>
         <div class="aid-figure">
           <div class="aid-portrait">${img(actor.img, actor.name)}</div>
           <div class="aid-ac" style="left:${layout.fixed.ac.x}%;top:${layout.fixed.ac.y}%" data-tooltip="${esc(L("Doll.AC"))}"><span>${esc(L("Doll.ACShort"))}</span><strong>${esc(ac)}</strong></div>
@@ -1315,7 +1315,6 @@ function renderWeaponList(app, actor) {
       where.set(id, list);
     }
   }
-  if ( !where.size ) return "";
   const open = !!game.user.getFlag(ID, `weaponsOpen.${actor.id}`);
   const editable = app.isEditable && actor.isOwner;
   const rows = [...where.keys()].map(id => actor.items.get(id)).filter(Boolean).map(item => renderRow(app, item, editable)
@@ -1329,7 +1328,7 @@ function renderWeaponList(app, actor) {
       </div>
       <div class="aid-container-body">
         <div class="aid-colheads"><span class="aid-spacer"></span><span class="aid-col-weight">${esc(L("Row.Weight"))}</span><span class="aid-col-qty">${esc(L("Row.Quantity"))}</span><span class="aid-col-use">${esc(L("Row.Uses"))}</span><span class="aid-col-ctl"></span></div>
-        <ol class="aid-list unlist">${rows}</ol>
+        <ol class="aid-list unlist">${rows || `<li class="aid-empty">${esc(L("Weapons.Empty"))}</li>`}</ol>
       </div>
     </div>`;
 }
@@ -1471,7 +1470,9 @@ function bindDoll(app, actor, aside) {
         if ( el.dataset.aidDrop === "weapon" ) return removeFromSet(actor, item, el.dataset.set, el.dataset.which);
         return unequip(actor, item, el.dataset.aidDrop === "container" ? null : undefined);
       }
-      lockTooltip(el);
+      if ( ev.altKey ) return lockTooltip(el);
+      game.tooltip?.deactivate?.();
+      item.sheet.render(true);
     });
   });
 
@@ -2345,6 +2346,7 @@ Hooks.once("setup", () => {
 });
 
 Hooks.once("ready", () => {
+  console.log(`${ID} | v${game.modules.get(ID)?.version} geladen`);
   game.modules.get(ID).api = { isReachable, getLayout, getDoll };
   game.socket.on(SOCKET, msg => {
     if ( (msg?.action === "ground") && (msg.gmId === game.user.id) ) groundHandler(msg.payload, msg.userId);
