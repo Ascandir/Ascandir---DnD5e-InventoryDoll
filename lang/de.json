@@ -82,7 +82,7 @@
     "Warn": {
       "WrongSlot": "{item} passt nicht in den Slot {slot}. (SL: Mit gedrückter Umschalttaste trotzdem zuweisen.)",
       "NotContainer": "{item} passt nicht in einen Behälter-Slot. (SL: Mit gedrückter Umschalttaste trotzdem erlauben.)",
-      "NotWeapon": "{item} kann nicht in dieser Hand geführt werden.",
+      "NotWeapon": "{item} kann nicht in dieser Hand geführt werden (Waffen, Werkzeuge, Instrumente, Foki und Schilde).",
       "ContainerNotEmpty": "Leere den Behälter, bevor du ihn auf den Boden legst.",
       "NoToken": "Dein Charakter braucht einen Token in der aktuellen Szene.",
       "NoGM": "Zum Ablegen auf den Boden muss ein SL online sein.",

@@ -471,8 +471,9 @@ async function assignContainer(actor, item, index, { force = false } = {}) {
 
 async function assignWeapon(actor, item, set, which) {
   if ( !inInventory(item) ) return ui.notifications.warn(L("Warn.NotInventory", { item: item.name }));
-  const okMain = item.type === "weapon";
-  const okOff = okMain || isShield(item) || isFocus(item);
+  // Haupthand: Waffen, Werkzeuge/Instrumente (z. B. Laute oder Violine als Zauberfokus) und Zauberfoki
+  const okMain = (item.type === "weapon") || (item.type === "tool") || isFocus(item);
+  const okOff = okMain || isShield(item);
   if ( (which === "primary") && !okMain && okOff ) which = "secondary";
   if ( (which === "secondary") && !okOff ) return ui.notifications.warn(L("Warn.NotWeapon", { item: item.name }));
   if ( (which === "primary") && !okMain ) return ui.notifications.warn(L("Warn.NotWeapon", { item: item.name }));
@@ -1590,7 +1591,7 @@ function bindDoll(app, actor, aside) {
       const st = getSets(actor).sets[t.dataset.set];
       const main = actor.items.get(st.primary);
       let which = "primary";
-      if ( isShield(item) || isFocus(item) ) which = "secondary";
+      if ( isShield(item) ) which = "secondary";
       else if ( main && (main.id !== item.id) && !isTwoHanded(main) && !isTwoHanded(item) && !st.secondary ) which = "secondary";
       return assignWeapon(actor, item, t.dataset.set, which);
     }
