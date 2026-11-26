@@ -1817,43 +1817,44 @@ function reconcile(actor) {
  */
 function keepScroll(app, tab) {
   app._aidScroll ??= {};
-  const els = [["tab", tab], ["body", tab.closest(".tab-body")], ["window", tab.closest(".window-content")]].filter(([, el]) => el);
+  // Alle scrollenden Bereiche vom Reiter bis zum Fenster (im dnd5e-Bogen ist das u. a. .main-content)
+  const els = [];
+  const stop = app.element ?? document.body;
+  for ( let el = tab, i = 0; el && (i < 12); el = el.parentElement, i++ ) {
+    const oy = getComputedStyle(el).overflowY;
+    if ( ["auto", "scroll", "overlay"].includes(oy) || (el === tab) ) els.push([el.classList.contains("main-content") ? "main" : (el === tab ? "tab" : `p${i}`), el]);
+    if ( el === stop ) break;
+  }
   for ( const [k, el] of els ) {
     const saved = app._aidScroll[k];
     if ( saved ) {
       el.scrollTop = saved;
-      requestAnimationFrame(() => { if ( el.isConnected && (el.scrollTop < saved) ) el.scrollTop = saved; });
+      requestAnimationFrame(() => { if ( el.isConnected && (Math.abs(el.scrollTop - saved) > 1) ) el.scrollTop = saved; });
     }
     if ( !el.dataset.aidScroll ) {
       el.dataset.aidScroll = "1";
-      el.addEventListener("scroll", () => { app._aidScroll[k] = el.scrollTop; }, { passive: true });
+      el.addEventListener("scroll", () => {
+        // Nur merken, solange die Paperdoll vollständig aufgebaut ist (nicht den zusammengeschrumpften Zwischenstand)
+        if ( !el.querySelector(".aid-containers") && (el !== tab) && !tab.isConnected ) return;
+        app._aidScroll[k] = el.scrollTop;
+      }, { passive: true });
     }
   }
 }
 
-/* ---------- Auf-/Zugeklappt merken (lokal im Browser jedes Spielers) ---------- */
-const COLLAPSE_DEFAULTS = { "aid-weapons": true };
-function isCollapsed(actor, id) {
-  const state = setting("collapseState")?.[actor.id] ?? {};
-  if ( id in state ) return !!state[id];
-  // Übernahme aus älteren Versionen (Benutzer-Flags)
-  if ( id === "aid-weapons" ) {
-    const old = game.user.getFlag(ID, `weaponsOpen.${actor.id}`);
-    if ( old !== undefined ) return !old;
-  } else if ( id === "aid-cbar" ) {
-    const old = game.user.getFlag(ID, "cbarCollapsed");
-    if ( old !== undefined ) return !!old;
-  } else if ( (game.user.getFlag(ID, `collapsed.${actor.id}`) ?? []).includes(id) ) return true;
-  return COLLAPSE_DEFAULTS[id] ?? false;
-}
-let collapseSave = Promise.resolve();
-function setCollapsed(actor, id, collapsed) {
-  collapseSave = collapseSave.then(() => {
-    const all = foundry.utils.deepClone(setting("collapseState") ?? {});
-    (all[actor.id] ??= {})[id] = !!collapsed;
-    return game.settings.set(ID, "collapseState", all);
-  }).catch(err => console.warn(`${ID} | Zuklappen merken`, err));
-  return collapseSave;
+/** Vor dem Neuzeichnen die aktuelle Position festhalten (bevor der Inhalt kurzzeitig schrumpft). */
+function rememberScroll(app) {
+  const tab = app.element?.querySelector("section.tab.aid-tab");
+  if ( !tab ) return;
+  app._aidScroll ??= {};
+  const stop = app.element;
+  for ( let el = tab, i = 0; el && (i < 12); el = el.parentElement, i++ ) {
+    const oy = getComputedStyle(el).overflowY;
+    if ( ["auto", "scroll", "overlay"].includes(oy) || (el === tab) ) {
+      app._aidScroll[el.classList.contains("main-content") ? "main" : (el === tab ? "tab" : `p${i}`)] = el.scrollTop;
+    }
+    if ( el === stop ) break;
+  }
 }
 
 const classicMode = () => !!game.user.getFlag(ID, "classic");
@@ -2483,6 +2484,11 @@ Hooks.once("setup", () => {
       return r;
     };
   }
+  const originalRender = Sheet.prototype._preRender;
+  Sheet.prototype._preRender = async function(...args) {
+    try { rememberScroll(this); } catch { /* optional */ }
+    return originalRender?.apply(this, args);
+  };
   const original = Sheet.prototype.changeTab;
   Sheet.prototype.changeTab = function(tab, group, options) {
     original.call(this, tab, group, options);
