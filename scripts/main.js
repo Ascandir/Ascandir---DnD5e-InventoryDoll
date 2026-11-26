@@ -1250,6 +1250,14 @@ function itemSubtitle(item) {
 }
 
 function renderRow(app, item, editable) {
+  try { return renderRowUnsafe(app, item, editable); }
+  catch ( err ) {
+    console.error(`${ID} | Zeile ${item?.name}`, err);
+    return `<li class="aid-row aid-row-error"><div class="item-row"><span class="aid-error">⚠ ${esc(item?.name ?? "?")}: ${esc(err.message)}</span></div></li>`;
+  }
+}
+
+function renderRowUnsafe(app, item, editable) {
   const qty = item.system.quantity ?? 1;
   const weight = item.system.totalWeight ?? ((item.system.weight?.value ?? 0) * qty);
   const uses = item.system.uses?.max ? `${item.system.uses.value ?? 0}/${item.system.uses.max}` : "";
@@ -1304,7 +1312,15 @@ function combatToggle(container) {
       <i class="fa-solid ${ok ? "fa-hand-fist" : "fa-ban"}" inert></i></button>`;
 }
 
-function renderContainerSection(app, container, { primary = false, attached = true, collapsed = false }, editable) {
+function renderContainerSection(app, container, opts, editable) {
+  try { return renderContainerSectionUnsafe(app, container, opts, editable); }
+  catch ( err ) {
+    console.error(`${ID} | Behälter ${container?.name}`, err);
+    return `<div class="aid-container"><div class="aid-container-header"><h3>⚠ ${esc(container?.name ?? "?")}</h3></div><p class="aid-error">${esc(err.message)}</p></div>`;
+  }
+}
+
+function renderContainerSectionUnsafe(app, container, { primary = false, attached = true, collapsed = false }, editable) {
   const cap = capacityOf(container);
   const pct = cap ? Math.clamp(Math.round((Number(cap.value) / Number(cap.max)) * 100), 0, 100) : 0;
   const items = [...(container.system.contents ?? [])].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
@@ -1857,6 +1873,31 @@ function rememberScroll(app) {
   }
 }
 
+/* ---------- Auf-/Zugeklappt merken (lokal im Browser jedes Spielers) ---------- */
+const COLLAPSE_DEFAULTS = { "aid-weapons": true };
+function isCollapsed(actor, id) {
+  const state = setting("collapseState")?.[actor.id] ?? {};
+  if ( id in state ) return !!state[id];
+  // Übernahme aus älteren Versionen (Benutzer-Flags)
+  if ( id === "aid-weapons" ) {
+    const old = game.user.getFlag(ID, `weaponsOpen.${actor.id}`);
+    if ( old !== undefined ) return !old;
+  } else if ( id === "aid-cbar" ) {
+    const old = game.user.getFlag(ID, "cbarCollapsed");
+    if ( old !== undefined ) return !!old;
+  } else if ( (game.user.getFlag(ID, `collapsed.${actor.id}`) ?? []).includes(id) ) return true;
+  return COLLAPSE_DEFAULTS[id] ?? false;
+}
+let collapseSave = Promise.resolve();
+function setCollapsed(actor, id, collapsed) {
+  collapseSave = collapseSave.then(() => {
+    const all = foundry.utils.deepClone(setting("collapseState") ?? {});
+    (all[actor.id] ??= {})[id] = !!collapsed;
+    return game.settings.set(ID, "collapseState", all);
+  }).catch(err => console.warn(`${ID} | Zuklappen merken`, err));
+  return collapseSave;
+}
+
 const classicMode = () => !!game.user.getFlag(ID, "classic");
 async function toggleClassic() {
   await game.user.setFlag(ID, "classic", !classicMode());
@@ -1908,7 +1949,11 @@ function inject(app, element) {
     const box = document.createElement("div");
     for ( const [name, fn] of parts ) {
       try { box.insertAdjacentHTML("beforeend", fn()); }
-      catch ( err ) { failed = true; console.error(`${ID} | ${name} konnten nicht angezeigt werden`, err); }
+      catch ( err ) {
+        failed = true;
+        console.error(`${ID} | ${name} konnten nicht angezeigt werden`, err);
+        box.insertAdjacentHTML("beforeend", `<p class="aid-error">⚠ InventoryDoll v${esc(game.modules.get(ID)?.version ?? "?")} – ${esc(name)}: ${esc(err.message)}</p>`);
+      }
     }
     for ( const node of [...box.children] ) inv.insertBefore(node, list);
     // Wenn die Behälterlisten scheitern, die normale dnd5e-Behälteranzeige wieder einblenden
