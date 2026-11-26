@@ -1814,6 +1814,26 @@ function reconcile(actor) {
   }, 50);
 }
 
+/**
+ * Scroll-Position im Inventar halten: Foundry stellt sie wieder her, bevor die Paperdoll ihre Listen einfügt –
+ * die Seite ist dann noch kurz und man landet oben. Wir merken uns die Position selbst und setzen sie danach.
+ */
+function keepScroll(app, tab) {
+  app._aidScroll ??= {};
+  const els = [["tab", tab], ["body", tab.closest(".tab-body")], ["window", tab.closest(".window-content")]].filter(([, el]) => el);
+  for ( const [k, el] of els ) {
+    const saved = app._aidScroll[k];
+    if ( saved ) {
+      el.scrollTop = saved;
+      requestAnimationFrame(() => { if ( el.isConnected && (el.scrollTop < saved) ) el.scrollTop = saved; });
+    }
+    if ( !el.dataset.aidScroll ) {
+      el.dataset.aidScroll = "1";
+      el.addEventListener("scroll", () => { app._aidScroll[k] = el.scrollTop; }, { passive: true });
+    }
+  }
+}
+
 const classicMode = () => !!game.user.getFlag(ID, "classic");
 async function toggleClassic() {
   await game.user.setFlag(ID, "classic", !classicMode());
@@ -1891,6 +1911,7 @@ function inject(app, element) {
   }
 
   if ( setting("hideSidebar") && (app.tabGroups?.primary === "inventory") ) app._toggleSidebar?.(true);
+  try { keepScroll(app, tab); } catch ( err ) { console.warn(`${ID} | Scroll`, err); }
   try { repairLoops(actor); } catch ( err ) { console.error(`${ID} | Reparatur`, err); }
   // Waffenloser Schlag ist immer ausgerüstet
   if ( actor.isOwner ) {
