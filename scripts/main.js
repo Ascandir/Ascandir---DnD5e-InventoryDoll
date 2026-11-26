@@ -1204,7 +1204,7 @@ function renderContainerSlots(actor, d, editable) {
     : `<span class="aid-cplace" aria-label="${esc(L("Containers.Drop"))}"><i class="fa-solid fa-plus" inert></i></span>`}
       </div>`);
   }
-  const collapsed = !!game.user.getFlag(ID, "cbarCollapsed");
+  const collapsed = isCollapsed(actor, "aid-cbar");
   return `<section class="aid-cbar ${collapsed ? "collapsed" : ""} ${editable ? "editable" : ""}">
       <header class="aid-container-header" data-aid-cbar-toggle role="button" aria-expanded="${!collapsed}">
         <i class="fa-solid fa-chevron-right aid-chevron" inert></i><h3>${esc(L("Containers.Title"))}</h3>
@@ -1340,7 +1340,7 @@ function renderWeaponList(app, actor) {
       where.set(id, list);
     }
   }
-  const open = !!game.user.getFlag(ID, `weaponsOpen.${actor.id}`);
+  const open = !isCollapsed(actor, "aid-weapons");
   const editable = app.isEditable && actor.isOwner;
   const unarmedRows = actor.itemTypes.weapon.filter(isUnarmed).map(item => renderRow(app, item, editable)
     .replace(/<span class="subtitle">[^<]*<\/span>/, `<span class="subtitle">${esc(L("Weapons.Always"))}</span>`)).join("");
@@ -1363,7 +1363,7 @@ function renderWeaponList(app, actor) {
 function renderContainers(app, actor) {
   const editable = app.isEditable && actor.isOwner;
   const d = getDoll(actor);
-  const collapsedSet = new Set(game.user.getFlag(ID, `collapsed.${actor.id}`) ?? []);
+  const collapsedSet = { has: id => isCollapsed(actor, id) };
   const attached = d.containers.filter(id => id && (actor.items.get(id)?.type === "container") && !(purseActive() && isPurse(actor.items.get(id))));
   const primary = primaryContainer(actor, d);
   const sections = attached.map(id => renderContainerSection(app, actor.items.get(id),
@@ -1373,8 +1373,9 @@ function renderContainers(app, actor) {
   const title = `<h3 class="aid-unstowed-title">${esc(L("Containers.Unstowed"))}</h3>`;
   // Nicht angelegte Behälter liegen als ganz normale Gegenstände unter „Nicht verstaut“
   const looseList = loose.length ? `<div class="aid-containers aid-unstowed-containers">
-      <div class="aid-container aid-loose-list">
-        <div class="aid-container-header aid-loose-header"><h3>${esc(L("Containers.Title"))}</h3></div>
+      <div class="aid-container aid-loose-list ${isCollapsed(actor, "aid-loose") ? "collapsed" : ""}">
+        <div class="aid-container-header aid-loose-header" data-aid-toggle="aid-loose" role="button" aria-expanded="${!isCollapsed(actor, "aid-loose")}">
+          <i class="fa-solid fa-chevron-right aid-chevron" inert></i><h3>${esc(L("Containers.Title"))}</h3></div>
         <div class="aid-container-body">
           <div class="aid-colheads"><span class="aid-spacer"></span><span class="aid-col-weight">${esc(L("Row.Weight"))}</span><span class="aid-col-qty">${esc(L("Row.Quantity"))}</span><span class="aid-col-use">${esc(L("Row.Uses"))}</span><span class="aid-col-ctl"></span></div>
           <ol class="aid-list unlist">${loose.map(c => renderRow(app, c, editable)).join("")}</ol>
@@ -1507,7 +1508,7 @@ function bindDoll(app, actor, aside) {
     if ( ev.target.closest("button, select, input") ) return;
     const bar = aside.closest(".aid-cbar") ?? aside;
     bar.classList.toggle("collapsed");
-    await game.user.setFlag(ID, "cbarCollapsed", bar.classList.contains("collapsed"));
+    await setCollapsed(actor, "aid-cbar", bar.classList.contains("collapsed"));
   });
 
   aside.querySelectorAll("[data-aid-combat]").forEach(b => b.addEventListener("click", async ev => {
@@ -1631,12 +1632,7 @@ function bindContainerWrap(app, actor, wrap, editable) {
     const box = h.closest(".aid-container");
     box.classList.toggle("collapsed");
     h.setAttribute("aria-expanded", String(!box.classList.contains("collapsed")));
-    if ( id === "aid-weapons" ) return game.user.setFlag(ID, `weaponsOpen.${actor.id}`, !box.classList.contains("collapsed"));
-    const key = `collapsed.${actor.id}`;
-    const set = new Set(game.user.getFlag(ID, key) ?? []);
-    if ( box.classList.contains("collapsed") ) set.add(id);
-    else set.delete(id);
-    await game.user.setFlag(ID, key, [...set]);
+    await setCollapsed(actor, id, box.classList.contains("collapsed"));
   }));
 
   wrap.querySelectorAll(".aid-row").forEach(row => {
@@ -1832,6 +1828,31 @@ function keepScroll(app, tab) {
       el.addEventListener("scroll", () => { app._aidScroll[k] = el.scrollTop; }, { passive: true });
     }
   }
+}
+
+/* ---------- Auf-/Zugeklappt merken (lokal im Browser jedes Spielers) ---------- */
+const COLLAPSE_DEFAULTS = { "aid-weapons": true };
+function isCollapsed(actor, id) {
+  const state = setting("collapseState")?.[actor.id] ?? {};
+  if ( id in state ) return !!state[id];
+  // Übernahme aus älteren Versionen (Benutzer-Flags)
+  if ( id === "aid-weapons" ) {
+    const old = game.user.getFlag(ID, `weaponsOpen.${actor.id}`);
+    if ( old !== undefined ) return !old;
+  } else if ( id === "aid-cbar" ) {
+    const old = game.user.getFlag(ID, "cbarCollapsed");
+    if ( old !== undefined ) return !!old;
+  } else if ( (game.user.getFlag(ID, `collapsed.${actor.id}`) ?? []).includes(id) ) return true;
+  return COLLAPSE_DEFAULTS[id] ?? false;
+}
+let collapseSave = Promise.resolve();
+function setCollapsed(actor, id, collapsed) {
+  collapseSave = collapseSave.then(() => {
+    const all = foundry.utils.deepClone(setting("collapseState") ?? {});
+    (all[actor.id] ??= {})[id] = !!collapsed;
+    return game.settings.set(ID, "collapseState", all);
+  }).catch(err => console.warn(`${ID} | Zuklappen merken`, err));
+  return collapseSave;
 }
 
 const classicMode = () => !!game.user.getFlag(ID, "classic");
@@ -2403,6 +2424,7 @@ Hooks.once("init", () => {
     name: "AID.Settings.Player.Name", label: "AID.Settings.Player.Label", hint: "AID.Settings.Player.Hint",
     icon: "fa-solid fa-user", type: IconColorMenu, restricted: false
   });
+  game.settings.register(ID, "collapseState", { scope: "client", config: false, type: Object, default: {} });
   game.settings.register(ID, "iconColorDefault", { scope: "client", config: false, type: String, default: "#fff4d6", onChange: rerenderSheets });
   reg("enabled", { name: "AID.Settings.Enabled.Name", hint: "AID.Settings.Enabled.Hint", type: Boolean, default: true, onChange: rerenderSheets });
   reg("hideSidebar", { name: "AID.Settings.HideSidebar.Name", hint: "AID.Settings.HideSidebar.Hint", type: Boolean, default: true, onChange: rerenderSheets });

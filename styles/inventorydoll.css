@@ -650,7 +650,7 @@
   height: 28px; min-height: 0; padding: 0 12px; margin-bottom: 6px;
   font-size: 12px;
 }
-.aid-loose-header { cursor: default; }
+.aid-loose-header { cursor: pointer; }
 .aid-weapons .aid-container-header h3 .fa-khanda { margin-right: 4px; color: var(--dnd5e-color-gold); }
 
 /* ---------- v0.2.37: Hintergrundbild hinter dem Porträt ---------- */
