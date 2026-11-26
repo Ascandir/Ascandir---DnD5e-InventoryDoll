@@ -1735,7 +1735,8 @@ function applySearch(tab, controls) {
       any ||= hit;
     }
     box.classList.toggle("aid-search-hidden", active && !any && !boxMatch);
-    box.classList.toggle("aid-searching", active);
+    // Nur eine Namenssuche klappt zugeklappte Behälter auf – aktive Filter respektieren den gespeicherten Zustand
+    box.classList.toggle("aid-searching", !!q);
   }
 }
 
