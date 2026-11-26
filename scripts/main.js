@@ -1831,46 +1831,72 @@ function reconcile(actor) {
  * Scroll-Position im Inventar halten: Foundry stellt sie wieder her, bevor die Paperdoll ihre Listen einfügt –
  * die Seite ist dann noch kurz und man landet oben. Wir merken uns die Position selbst und setzen sie danach.
  */
-function keepScroll(app, tab) {
-  app._aidScroll ??= {};
-  // Alle scrollenden Bereiche vom Reiter bis zum Fenster (im dnd5e-Bogen ist das u. a. .main-content)
-  const els = [];
+/** Der Bereich, der im Bogen tatsächlich scrollt (im dnd5e-Bogen meist .main-content). */
+function scrollHost(app, tab) {
   const stop = app.element ?? document.body;
+  let best = null;
   for ( let el = tab, i = 0; el && (i < 12); el = el.parentElement, i++ ) {
     const oy = getComputedStyle(el).overflowY;
-    if ( ["auto", "scroll", "overlay"].includes(oy) || (el === tab) ) els.push([el.classList.contains("main-content") ? "main" : (el === tab ? "tab" : `p${i}`), el]);
+    if ( ["auto", "scroll", "overlay"].includes(oy) && (el.scrollHeight > el.clientHeight + 1) ) { best = el; break; }
     if ( el === stop ) break;
   }
-  for ( const [k, el] of els ) {
-    const saved = app._aidScroll[k];
-    if ( saved ) {
-      el.scrollTop = saved;
-      requestAnimationFrame(() => { if ( el.isConnected && (Math.abs(el.scrollTop - saved) > 1) ) el.scrollTop = saved; });
-    }
-    if ( !el.dataset.aidScroll ) {
-      el.dataset.aidScroll = "1";
-      el.addEventListener("scroll", () => {
-        // Nur merken, solange die Paperdoll vollständig aufgebaut ist (nicht den zusammengeschrumpften Zwischenstand)
-        if ( !el.querySelector(".aid-containers") && (el !== tab) && !tab.isConnected ) return;
-        app._aidScroll[k] = el.scrollTop;
-      }, { passive: true });
-    }
-  }
+  return best ?? tab.closest(".main-content") ?? tab;
 }
 
-/** Vor dem Neuzeichnen die aktuelle Position festhalten (bevor der Inhalt kurzzeitig schrumpft). */
+const ANCHOR_SEL = "[data-item-id]";
+function findAnchor(host, preferId) {
+  const top = host.getBoundingClientRect().top;
+  if ( preferId ) {
+    const el = host.querySelector(`.aid-row[data-item-id="${preferId}"], li.item[data-item-id="${preferId}"]`);
+    if ( el && el.offsetParent ) return el;
+  }
+  // Sonst: erste sichtbare Zeile
+  for ( const el of host.querySelectorAll(`.aid-row${ANCHOR_SEL}, li.item${ANCHOR_SEL}`) ) {
+    if ( !el.offsetParent ) continue;
+    if ( el.getBoundingClientRect().bottom > top + 4 ) return el;
+  }
+  return null;
+}
+
+/** Vor dem Neuzeichnen: Scroll-Position und eine Anker-Zeile (zuletzt bediente bzw. erste sichtbare) merken. */
 function rememberScroll(app) {
   const tab = app.element?.querySelector("section.tab.aid-tab");
   if ( !tab ) return;
-  app._aidScroll ??= {};
-  const stop = app.element;
-  for ( let el = tab, i = 0; el && (i < 12); el = el.parentElement, i++ ) {
-    const oy = getComputedStyle(el).overflowY;
-    if ( ["auto", "scroll", "overlay"].includes(oy) || (el === tab) ) {
-      app._aidScroll[el.classList.contains("main-content") ? "main" : (el === tab ? "tab" : `p${i}`)] = el.scrollTop;
-    }
-    if ( el === stop ) break;
+  const host = scrollHost(app, tab);
+  const anchor = findAnchor(host, app._aidAnchorId);
+  app._aidScroll = {
+    top: host.scrollTop,
+    anchorId: anchor?.dataset.itemId ?? null,
+    anchorOffset: anchor ? anchor.getBoundingClientRect().top - host.getBoundingClientRect().top : null
+  };
+}
+
+/** Nach dem Aufbau: die Anker-Zeile wieder an dieselbe Stelle schieben (mehrfach, falls sich Höhen noch ändern). */
+function keepScroll(app, tab) {
+  // Zuletzt bediente Zeile merken (Menge, Nutzen, Klick)
+  if ( !tab.dataset.aidAnchor ) {
+    tab.dataset.aidAnchor = "1";
+    tab.addEventListener("pointerdown", ev => {
+      const row = ev.target.closest(".aid-row[data-item-id], li.item[data-item-id]");
+      app._aidAnchorId = row?.dataset.itemId ?? null;
+    }, { capture: true });
   }
+  const saved = app._aidScroll;
+  if ( !saved ) return;
+  const apply = () => {
+    if ( !tab.isConnected ) return;
+    const host = scrollHost(app, tab);
+    const el = saved.anchorId ? host.querySelector(`.aid-row[data-item-id="${saved.anchorId}"], li.item[data-item-id="${saved.anchorId}"]`) : null;
+    if ( el && el.offsetParent && (saved.anchorOffset != null) ) {
+      const now = el.getBoundingClientRect().top - host.getBoundingClientRect().top;
+      const diff = now - saved.anchorOffset;
+      if ( Math.abs(diff) > 1 ) host.scrollTop += diff;
+    } else if ( Math.abs(host.scrollTop - saved.top) > 1 ) host.scrollTop = saved.top;
+  };
+  apply();
+  requestAnimationFrame(apply);
+  setTimeout(apply, 60);
+  setTimeout(apply, 200);
 }
 
 /* ---------- Auf-/Zugeklappt merken (lokal im Browser jedes Spielers) ---------- */
